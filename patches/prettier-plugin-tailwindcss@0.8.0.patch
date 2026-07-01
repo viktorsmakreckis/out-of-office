@@ -1,0 +1,33 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 1fc96d6df4be2e78b193e2cadda19a1da3efa8b9..463f13c157198b81e4046b1c4abf92ab1a5b8d0b 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -976,8 +976,9 @@ function transformSvelte(ast, env) {
+ 	let { matcher, changes } = env;
+ 	for (let attr of ast.attributes ?? []) {
+ 		if (!matcher.hasStaticAttr(attr.name) || attr.type !== "Attribute") continue;
+-		for (let i = 0; i < attr.value.length; i++) {
+-			let value = attr.value[i];
++		let attrValues = Array.isArray(attr.value) ? attr.value : [attr.value];
++		for (let i = 0; i < attrValues.length; i++) {
++			let value = attrValues[i];
+ 			if (value.type === "Text") {
+ 				let same = value.raw === value.data;
+ 				value.raw = sortClasses(value.raw, {
+@@ -994,7 +995,7 @@ function transformSvelte(ast, env) {
+ 					removeDuplicates: true,
+ 					collapseWhitespace: false
+ 				});
+-			} else if (value.type === "MustacheTag") visit(value.expression, {
++			} else if (value.type === "MustacheTag" || value.type === "ExpressionTag") visit(value.expression, {
+ 				Literal(node) {
+ 					if (isStringLiteral(node)) {
+ 						let before = node.raw;
+@@ -1027,6 +1028,7 @@ function transformSvelte(ast, env) {
+ 		}
+ 	}
+ 	for (let child of ast.children ?? []) transformSvelte(child, env);
++	for (let child of ast.fragment?.nodes ?? []) transformSvelte(child, env);
+ 	if (ast.type === "IfBlock") {
+ 		var _ast$else;
+ 		for (let child of ((_ast$else = ast.else) === null || _ast$else === void 0 ? void 0 : _ast$else.children) ?? []) transformSvelte(child, env);
