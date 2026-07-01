@@ -9,8 +9,15 @@ declare global {
 			session?: Session;
 		}
 
+		interface PageData {
+			flash?: {
+				type?: 'success' | 'error' | 'info' | 'warning' | 'loading' | 'message';
+				message: string;
+				description?: string;
+			};
+		}
+
 		// interface Error {}
-		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
 	}
