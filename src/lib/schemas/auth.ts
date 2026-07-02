@@ -9,7 +9,9 @@ const nameSchema = z
 	.trim()
 	.min(1, { error: () => m.validation_name_required() })
 	.max(100);
-const emailSchema = z.email({ error: () => m.validation_email_invalid() });
+const emailSchema = z
+	.email({ error: () => m.validation_email_invalid() })
+	.max(254, { error: () => m.validation_email_invalid() });
 const passwordSchema = z
 	.string({ error: () => m.validation_password_min() })
 	.min(8, { error: () => m.validation_password_min() })

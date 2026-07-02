@@ -34,7 +34,7 @@ export async function checkRateLimit(...rules: RateLimitRule[]): Promise<boolean
 	if (Math.random() < 0.01) {
 		db.delete(authRateLimit)
 			.where(sql`${authRateLimit.resetAt} < now() - interval '1 day'`)
-			.catch(() => {});
+			.catch((error) => console.error('rate-limit cleanup failed', error));
 	}
 	return allowed;
 }
