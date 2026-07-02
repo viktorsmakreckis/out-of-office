@@ -24,12 +24,14 @@
 ### Task 1: `auth_rate_limit` table + `checkRateLimit` helper
 
 **Files:**
+
 - Modify: `src/lib/server/db/schema.ts`
 - Create: `src/lib/server/rate-limit.ts`
 - Test: `src/lib/server/rate-limit.spec.ts`
 - Create: `drizzle/` migration (via CLI)
 
 **Interfaces:**
+
 - Consumes: `db` from `$lib/server/db`.
 - Produces (used by Task 3):
   - `interface RateLimitRule { key: string; max: number; windowSeconds: number }`
@@ -180,11 +182,13 @@ git commit -m "feat(auth): add postgres-backed rate limit helper"
 ### Task 2: Enable better-auth's built-in limiter for public endpoints
 
 **Files:**
+
 - Modify: `src/lib/server/auth.ts` (add `rateLimit` option)
 - Regenerate: `src/lib/server/db/auth.schema.ts` (via `pnpm auth:schema`)
 - Create: `drizzle/` migration (via CLI)
 
 **Interfaces:**
+
 - Consumes: existing `auth` config.
 - Produces: `/api/auth/*` endpoints rate-limited per IP with durable counters (better-auth's `rateLimit` model table). No app-code consumers.
 
@@ -236,6 +240,7 @@ git commit -m "feat(auth): enable better-auth rate limiting with database storag
 ### Task 3: Enforce limits in form actions + localized error
 
 **Files:**
+
 - Modify: `messages/en.json`, `messages/pl.json`, `messages/fr.json` (one key each)
 - Modify: `src/routes/(auth)/login/+page.server.ts`
 - Modify: `src/routes/(auth)/signup/+page.server.ts`
@@ -244,6 +249,7 @@ git commit -m "feat(auth): enable better-auth rate limiting with database storag
 - Modify: `src/routes/app/settings/+page.server.ts`
 
 **Interfaces:**
+
 - Consumes: `checkRateLimit`/`RateLimitRule` from `$lib/server/rate-limit` (Task 1); existing `setError`, flash `redirect`, `m`.
 - Produces: user-visible throttling; no new exports.
 
@@ -276,13 +282,13 @@ import { checkRateLimit } from '$lib/server/rate-limit';
 ```
 
 ```ts
-		if (!form.valid) return fail(400, { form });
+if (!form.valid) return fail(400, { form });
 
-		const limitOk = await checkRateLimit(
-			{ key: `login:email:${form.data.email.toLowerCase()}`, max: 5, windowSeconds: 900 },
-			{ key: `login:ip:${event.getClientAddress()}`, max: 10, windowSeconds: 900 }
-		);
-		if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
+const limitOk = await checkRateLimit(
+	{ key: `login:email:${form.data.email.toLowerCase()}`, max: 5, windowSeconds: 900 },
+	{ key: `login:ip:${event.getClientAddress()}`, max: 10, windowSeconds: 900 }
+);
+if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
 ```
 
 - [ ] **Step 3: Signup** — `src/routes/(auth)/signup/+page.server.ts`
@@ -290,12 +296,12 @@ import { checkRateLimit } from '$lib/server/rate-limit';
 Same import; after the `!form.valid` guard:
 
 ```ts
-		const limitOk = await checkRateLimit({
-			key: `signup:ip:${event.getClientAddress()}`,
-			max: 10,
-			windowSeconds: 3600
-		});
-		if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
+const limitOk = await checkRateLimit({
+	key: `signup:ip:${event.getClientAddress()}`,
+	max: 10,
+	windowSeconds: 3600
+});
+if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
 ```
 
 - [ ] **Step 4: Forgot password (enumeration-safe skip)** — `src/routes/(auth)/forgot-password/+page.server.ts`
@@ -303,23 +309,23 @@ Same import; after the `!form.valid` guard:
 Same import; replace the action body between the `!form.valid` guard and the final redirect with:
 
 ```ts
-		const limitOk = await checkRateLimit(
-			{ key: `forgot:email:${form.data.email.toLowerCase()}`, max: 3, windowSeconds: 3600 },
-			{ key: `forgot:ip:${event.getClientAddress()}`, max: 10, windowSeconds: 3600 }
-		);
+const limitOk = await checkRateLimit(
+	{ key: `forgot:email:${form.data.email.toLowerCase()}`, max: 3, windowSeconds: 3600 },
+	{ key: `forgot:ip:${event.getClientAddress()}`, max: 10, windowSeconds: 3600 }
+);
 
-		if (limitOk) {
-			try {
-				await auth.api.requestPasswordReset({
-					body: { email: form.data.email, redirectTo: '/reset-password' }
-				});
-			} catch (error) {
-				// Always report success so account existence can't be probed.
-				console.error('requestPasswordReset failed', error);
-			}
-		}
+if (limitOk) {
+	try {
+		await auth.api.requestPasswordReset({
+			body: { email: form.data.email, redirectTo: '/reset-password' }
+		});
+	} catch (error) {
+		// Always report success so account existence can't be probed.
+		console.error('requestPasswordReset failed', error);
+	}
+}
 
-		redirect(303, '/login', { type: 'success', message: m.auth_forgot_sent() }, event);
+redirect(303, '/login', { type: 'success', message: m.auth_forgot_sent() }, event);
 ```
 
 (When limited: no API call, no email, same success flash — the enumeration posture is unchanged.)
@@ -329,11 +335,11 @@ Same import; replace the action body between the `!form.valid` guard and the fin
 Same import; after the `!form.valid` guard:
 
 ```ts
-		const limitOk = await checkRateLimit(
-			{ key: `resend:email:${form.data.email.toLowerCase()}`, max: 3, windowSeconds: 3600 },
-			{ key: `resend:ip:${event.getClientAddress()}`, max: 10, windowSeconds: 3600 }
-		);
-		if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
+const limitOk = await checkRateLimit(
+	{ key: `resend:email:${form.data.email.toLowerCase()}`, max: 3, windowSeconds: 3600 },
+	{ key: `resend:ip:${event.getClientAddress()}`, max: 10, windowSeconds: 3600 }
+);
+if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
 ```
 
 - [ ] **Step 6: Settings actions** — `src/routes/app/settings/+page.server.ts`
@@ -352,40 +358,40 @@ Then in each of the three email-sending/credential actions, after the `!form.val
 `changeEmail`:
 
 ```ts
-		const user = event.locals.user;
-		if (!user) kitRedirect(303, '/login');
-		const limitOk = await checkRateLimit({
-			key: `change-email:user:${user.id}`,
-			max: 3,
-			windowSeconds: 3600
-		});
-		if (!limitOk) return setError(form, 'newEmail', m.rate_limit_exceeded());
+const user = event.locals.user;
+if (!user) kitRedirect(303, '/login');
+const limitOk = await checkRateLimit({
+	key: `change-email:user:${user.id}`,
+	max: 3,
+	windowSeconds: 3600
+});
+if (!limitOk) return setError(form, 'newEmail', m.rate_limit_exceeded());
 ```
 
 `changePassword`:
 
 ```ts
-		const user = event.locals.user;
-		if (!user) kitRedirect(303, '/login');
-		const limitOk = await checkRateLimit({
-			key: `change-password:user:${user.id}`,
-			max: 5,
-			windowSeconds: 900
-		});
-		if (!limitOk) return setError(form, 'currentPassword', m.rate_limit_exceeded());
+const user = event.locals.user;
+if (!user) kitRedirect(303, '/login');
+const limitOk = await checkRateLimit({
+	key: `change-password:user:${user.id}`,
+	max: 5,
+	windowSeconds: 900
+});
+if (!limitOk) return setError(form, 'currentPassword', m.rate_limit_exceeded());
 ```
 
 `deleteAccount`:
 
 ```ts
-		const user = event.locals.user;
-		if (!user) kitRedirect(303, '/login');
-		const limitOk = await checkRateLimit({
-			key: `delete-account:user:${user.id}`,
-			max: 5,
-			windowSeconds: 900
-		});
-		if (!limitOk) return setError(form, 'password', m.rate_limit_exceeded());
+const user = event.locals.user;
+if (!user) kitRedirect(303, '/login');
+const limitOk = await checkRateLimit({
+	key: `delete-account:user:${user.id}`,
+	max: 5,
+	windowSeconds: 900
+});
+if (!limitOk) return setError(form, 'password', m.rate_limit_exceeded());
 ```
 
 (The `profile` action mutates no credentials and sends no email — no limit, per spec.)
@@ -400,6 +406,7 @@ Expected: all clean; 17 tests passing.
 - [ ] **Step 8: Browser spot-check**
 
 `docker compose up -d`, dev server via `RESEND_API_KEY="" pnpm dev` (background). Using the preview tools:
+
 1. Sign up + verify a throwaway user (`sdd-rl-test@example.com`; verification URL in server console).
 2. Sign out. Attempt login with the wrong password 6 times → the 6th shows the localized "Too many attempts" form error (5/15min per email).
 3. Forgot-password 4 times for the same email → all four show the normal success flash; the server console shows reset emails for the first 3 only.

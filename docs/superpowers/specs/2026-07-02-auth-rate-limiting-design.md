@@ -81,9 +81,10 @@ ON CONFLICT (key) DO UPDATE SET
 RETURNING count
 ```
 
-  `allowed = count <= max` for every rule. Windows self-reset in place;
-  opportunistic cleanup deletes rows expired for more than a day (piggybacked
-  on ~1% of checks) so the table stays bounded.
+`allowed = count <= max` for every rule. Windows self-reset in place;
+opportunistic cleanup deletes rows expired for more than a day (piggybacked
+on ~1% of checks) so the table stays bounded.
+
 - Attempts are counted before calling `auth.api.*` (i.e. successes count
   too) — simpler, and it also caps email-sending endpoints regardless of
   outcome.
@@ -92,15 +93,15 @@ RETURNING count
 
 Applied at the top of each action, after form validation, before `auth.api.*`:
 
-| Action | Per-email / per-user | Per-IP |
-| --- | --- | --- |
-| login | 5 / 15 min | 10 / 15 min |
-| signup | — | 10 / 1 h |
-| forgot-password | 3 / 1 h | 10 / 1 h |
-| verify-email resend | 3 / 1 h | 10 / 1 h |
-| settings: change email | 3 / 1 h (user id) | — |
-| settings: change password | 5 / 15 min (user id) | — |
-| settings: delete account | 5 / 15 min (user id) | — |
+| Action                    | Per-email / per-user | Per-IP      |
+| ------------------------- | -------------------- | ----------- |
+| login                     | 5 / 15 min           | 10 / 15 min |
+| signup                    | —                    | 10 / 1 h    |
+| forgot-password           | 3 / 1 h              | 10 / 1 h    |
+| verify-email resend       | 3 / 1 h              | 10 / 1 h    |
+| settings: change email    | 3 / 1 h (user id)    | —           |
+| settings: change password | 5 / 15 min (user id) | —           |
+| settings: delete account  | 5 / 15 min (user id) | —           |
 
 - IP from `event.getClientAddress()`; email keys lowercased; settings actions
   key on the session user id (already authenticated).
