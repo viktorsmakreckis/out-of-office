@@ -10,7 +10,7 @@ export interface EmailContent {
 }
 
 /** Locale stored on the better-auth user (always set at signup), with a safe fallback. */
-export function userLocale(user: { locale?: unknown }): Locale {
+export function userLocale(user: Record<string, unknown>): Locale {
 	return isLocale(user.locale) ? user.locale : baseLocale;
 }
 
