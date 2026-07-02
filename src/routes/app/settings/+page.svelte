@@ -31,7 +31,15 @@
 		constraints: profileConstraints,
 		submitting: profileSubmitting,
 		enhance: profileEnhance
-	} = superForm(data.profileForm, { validators: zod4Client(profileSchema) });
+	} = superForm(data.profileForm, {
+		validators: zod4Client(profileSchema),
+		onResult({ result, cancel }) {
+			if (result.type === 'redirect') {
+				cancel();
+				window.location.assign(result.location);
+			}
+		}
+	});
 
 	// svelte-ignore state_referenced_locally
 	const {

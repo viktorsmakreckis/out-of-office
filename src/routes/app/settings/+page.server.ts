@@ -44,7 +44,11 @@ export const actions: Actions = {
 			return setError(form, '', authErrorMessage(error));
 		}
 
-		event.cookies.set(cookieName, form.data.locale, { path: '/', maxAge: cookieMaxAge });
+		event.cookies.set(cookieName, form.data.locale, {
+			path: '/',
+			maxAge: cookieMaxAge,
+			httpOnly: false
+		});
 		redirect(
 			303,
 			'/app/settings',
