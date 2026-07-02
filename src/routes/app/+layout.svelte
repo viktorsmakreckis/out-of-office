@@ -34,6 +34,11 @@
 					<NavigationMenu.Item>
 						<NavigationMenu.Link href={resolve('/app')}>{m.nav_home()}</NavigationMenu.Link>
 					</NavigationMenu.Item>
+					<NavigationMenu.Item>
+						<NavigationMenu.Link href={resolve('/app/calendar')}>
+							{m.nav_calendar()}
+						</NavigationMenu.Link>
+					</NavigationMenu.Item>
 				</NavigationMenu.List>
 			</NavigationMenu.Root>
 			<DropdownMenu.Root>
