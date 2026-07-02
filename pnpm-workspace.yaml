@@ -1,3 +1,5 @@
+overrides:
+  typebox: 1.1.6
 allowBuilds:
   '@prisma/client': true
   '@tailwindcss/oxide': true
