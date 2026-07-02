@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { organization } from 'better-auth/plugins';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
@@ -51,6 +52,12 @@ export const auth = betterAuth({
 		deleteUser: { enabled: true }
 	},
 	plugins: [
+		organization({
+			sendInvitationEmail: async (data) => {
+				// Replaced in a later task once invite emails + notifications exist.
+				console.info(`[team-invite] to=${data.email} team=${data.organization.name}`);
+			}
+		}),
 		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
 	]
 });
