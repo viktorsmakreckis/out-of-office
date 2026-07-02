@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { parseDate, toCalendarDate, type CalendarDate } from '@internationalized/date';
+	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -68,11 +69,12 @@
 		if (event.data) dialog?.openEdit(event.data);
 	}
 
-	function handleEventChange(event: CalendarEvent<EventRecord>, change: EventChange) {
+	async function handleEventChange(event: CalendarEvent<EventRecord>, change: EventChange) {
 		$moveForm.id = event.id;
 		$moveForm.allDay = change.allDay;
 		$moveForm.start = change.start.toString();
 		$moveForm.end = change.end.toString();
+		await tick();
 		submitMove();
 	}
 
