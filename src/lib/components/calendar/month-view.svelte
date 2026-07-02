@@ -107,10 +107,15 @@
 		})
 	);
 
-	function inSelection(day: CalendarDate): boolean {
-		return (
-			selection !== null && selection.start.compare(day) <= 0 && selection.end.compare(day) >= 0
-		);
+	/** Columns of `week` covered by the drag selection, for the ghost outline. */
+	function selectionSpanForRow(week: CalendarDate[]): { startCol: number; span: number } | null {
+		if (!selection) return null;
+		const rowStart = week[0];
+		const rowEnd = week[DAYS_IN_WEEK - 1];
+		if (selection.start.compare(rowEnd) > 0 || selection.end.compare(rowStart) < 0) return null;
+		const startCol = Math.max(0, daysBetween(rowStart, selection.start));
+		const endCol = Math.min(DAYS_IN_WEEK - 1, daysBetween(rowStart, selection.end));
+		return { startCol, span: endCol - startCol + 1 };
 	}
 
 	function dayAtPointer(e: PointerEvent): CalendarDate | null {
@@ -198,7 +203,7 @@
 />
 
 <div class="overflow-x-auto rounded-lg border">
-	<div class="flex h-[44rem] min-w-[640px] flex-col">
+	<div class="flex h-[44rem] min-w-[640px] flex-col select-none">
 		<div class="grid grid-cols-7 border-b">
 			{#each weeks[0] as day (day.toString())}
 				<div class="text-muted-foreground px-2 py-1.5 text-center text-xs font-medium">
@@ -208,6 +213,7 @@
 		</div>
 		<div class="grid flex-1 grid-rows-6" bind:this={gridEl}>
 			{#each rows as { week, segments, overflow }, w (week[0].toString())}
+				{@const ghost = selectionSpanForRow(week)}
 				<div class="relative border-b last:border-b-0" bind:clientHeight={rowHeights[w]}>
 					<div class="grid h-full grid-cols-7">
 						{#each week as day, c (day.toString())}
@@ -216,8 +222,7 @@
 								tabindex="0"
 								class={cn(
 									'focus-visible:ring-ring/50 relative border-r p-1 last:border-r-0 focus-visible:ring-[3px] focus-visible:outline-none',
-									!isSameMonth(day, focal) && 'bg-muted/30 text-muted-foreground',
-									inSelection(day) && 'bg-accent'
+									!isSameMonth(day, focal) && 'bg-muted/30 text-muted-foreground'
 								)}
 								onpointerdown={(e) => startSelect(e, day)}
 								onkeydown={(e) => {
@@ -260,6 +265,14 @@
 							</div>
 						{/each}
 					</div>
+					{#if ghost}
+						<div
+							class="border-primary bg-primary/10 pointer-events-none absolute inset-y-1 z-10 rounded-md border"
+							style="left: calc({(ghost.startCol / 7) * 100}% + 2px); width: calc({(ghost.span /
+								7) *
+								100}% - 4px);"
+						></div>
+					{/if}
 					<div class="pointer-events-none absolute inset-x-0 top-8">
 						{#each segments.filter((s) => s.lane < maxLanes) as segment (segment.event.id)}
 							<div

@@ -341,7 +341,7 @@
 />
 
 <div class="overflow-x-auto rounded-lg border">
-	<div class="flex h-[40rem] min-w-[640px] flex-col">
+	<div class="flex h-[40rem] min-w-[640px] flex-col select-none">
 		<div class="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b">
 			<div></div>
 			{#each days as day, i (day.toString())}

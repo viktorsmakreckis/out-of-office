@@ -6,6 +6,7 @@
 		startOfMonth,
 		type CalendarDate
 	} from '@internationalized/date';
+	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import type { Snippet } from 'svelte';
 	import * as Empty from '$lib/components/ui/empty';
 	import { m } from '$lib/paraglide/messages.js';
@@ -38,14 +39,19 @@
 </script>
 
 {#if groups.length === 0}
-	<Empty.Root class="rounded-lg border">
+	<Empty.Root class="border">
 		<Empty.Header>
+			<Empty.Media variant="icon">
+				<CalendarDaysIcon />
+			</Empty.Media>
 			<Empty.Title>{m.calendar_empty_title()}</Empty.Title>
 			<Empty.Description>{m.calendar_empty_description()}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
 {:else}
-	<div class="flex flex-col rounded-lg border">
+	<!-- overflow-clip (not -hidden) clips the sticky headers' square corners at the border
+	     radius without creating a scroll container, so position: sticky keeps working. -->
+	<div class="flex flex-col overflow-clip rounded-lg border">
 		{#each groups as group (group.day.toString())}
 			<section>
 				<h3
