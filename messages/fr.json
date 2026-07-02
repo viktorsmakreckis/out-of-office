@@ -61,6 +61,7 @@
 	"validation_locale_invalid": "Veuillez sélectionner une langue valide.",
 	"validation_event_type_invalid": "Choisissez un type d'événement",
 	"validation_event_title_required": "Un titre est requis pour les événements « Autre »",
+	"validation_event_title_too_long": "Le titre est trop long",
 	"validation_event_date_invalid": "Saisissez une date valide",
 	"validation_event_time_invalid": "Saisissez une heure valide",
 	"validation_event_end_before_start": "La fin doit être après le début",

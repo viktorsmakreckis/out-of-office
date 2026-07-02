@@ -5,7 +5,7 @@ import { redirect } from 'sveltekit-flash-message/server';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { CalendarView } from '$lib/components/calendar';
-import { changeRangeToInstants, formValuesToRange } from '$lib/events';
+import { changeRangeToInstants, formValuesToRange, safeTimezone } from '$lib/events';
 import { m } from '$lib/paraglide/messages.js';
 import { deleteEventSchema, eventSchema, moveEventSchema } from '$lib/schemas/event';
 import { db } from '$lib/server/db';
@@ -22,7 +22,7 @@ function calendarState(url: URL, timezone: string): { view: CalendarView; date: 
 	try {
 		date = parseDate(url.searchParams.get('date') ?? '');
 	} catch {
-		date = today(timezone);
+		date = today(safeTimezone(timezone));
 	}
 	return { view, date };
 }

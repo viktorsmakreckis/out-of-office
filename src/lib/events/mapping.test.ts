@@ -56,6 +56,13 @@ describe('toCalendarEvent', () => {
 		expect(event.color).toBe(eventTypeColors.other);
 		expect(event.data).toBe(timedRecord);
 	});
+
+	it('falls back to UTC for an invalid stored timezone', () => {
+		expect(() => toCalendarEvent(timedRecord, 'Not/AZone')).not.toThrow();
+		const event = toCalendarEvent(timedRecord, 'Not/AZone');
+		expect(event.allDay).toBe(false);
+		expect(event.start.toString()).toBe('2026-07-02T06:00:00');
+	});
 });
 
 describe('toFormValues', () => {

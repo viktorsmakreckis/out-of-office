@@ -30,7 +30,11 @@ export const eventSchema = z
 	.object({
 		id: z.string().default(''),
 		type: z.enum(eventTypes, { error: () => m.validation_event_type_invalid() }),
-		title: z.string().trim().max(200).default(''),
+		title: z
+			.string()
+			.trim()
+			.max(200, { error: () => m.validation_event_title_too_long() })
+			.default(''),
 		allDay: z.boolean(),
 		startDate: dateSchema,
 		endDate: dateSchema,
@@ -86,7 +90,7 @@ function timedEndIsAfterStart(
 }
 
 export const deleteEventSchema = z.object({
-	id: z.string().min(1)
+	id: z.string().min(1, { error: () => m.error_generic() })
 });
 
 export const moveEventSchema = z
@@ -102,16 +106,6 @@ export const moveEventSchema = z
 			const startDate = tryParse(() => parseDate(start));
 			const endDate = tryParse(() => parseDate(end));
 			if (!startDate || !endDate) {
-				ctx.issues.push({
-					code: 'custom',
-					message: m.validation_event_date_invalid(),
-					path: ['start'],
-					input: start
-				});
-				return;
-			}
-			// For all-day, reject strings with time component (T indicates datetime)
-			if (start.includes('T') || end.includes('T')) {
 				ctx.issues.push({
 					code: 'custom',
 					message: m.validation_event_date_invalid(),

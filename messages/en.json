@@ -61,6 +61,7 @@
 	"validation_locale_invalid": "Please select a valid language.",
 	"validation_event_type_invalid": "Choose an event type",
 	"validation_event_title_required": "A title is required for \"Other\" events",
+	"validation_event_title_too_long": "The title is too long",
 	"validation_event_date_invalid": "Enter a valid date",
 	"validation_event_time_invalid": "Enter a valid time",
 	"validation_event_end_before_start": "The end must be after the start",

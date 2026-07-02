@@ -40,7 +40,8 @@
 		validators: zod4Client(moveEventSchema),
 		onUpdated({ form }) {
 			if (!form.valid) toast.error(m.error_generic());
-		}
+		},
+		onError: () => toast.error(m.error_generic())
 	});
 
 	function handleDayClick(day: CalendarDate) {

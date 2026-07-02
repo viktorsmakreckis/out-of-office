@@ -22,7 +22,15 @@ export function formatTimeOfDay(value: { hour: number; minute: number }): string
 	return `${pad(value.hour)}:${pad(value.minute)}`;
 }
 
+const knownTimezones = new Set(Intl.supportedValuesOf('timeZone'));
+
+/** Guards against an invalid stored profile timezone (spec: fall back to UTC). */
+export function safeTimezone(timezone: string): string {
+	return knownTimezones.has(timezone) ? timezone : 'UTC';
+}
+
 export function toCalendarEvent(record: EventRecord, timezone: string): CalendarEvent<EventRecord> {
+	timezone = safeTimezone(timezone);
 	const base = {
 		id: record.id,
 		title: record.title ?? eventTypeLabel(record.type),
@@ -46,6 +54,7 @@ export function toCalendarEvent(record: EventRecord, timezone: string): Calendar
 }
 
 export function toFormValues(record: EventRecord, timezone: string): EventFormValues {
+	timezone = safeTimezone(timezone);
 	const shared = { id: record.id, type: record.type, title: record.title ?? '' };
 	if (record.allDay) {
 		return {
@@ -73,6 +82,7 @@ export function formValuesToRange(
 	values: Pick<EventFormValues, 'allDay' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>,
 	timezone: string
 ): { start: Date; end: Date } {
+	timezone = safeTimezone(timezone);
 	if (values.allDay) {
 		return {
 			start: parseDate(values.startDate).toDate('UTC'),
@@ -88,6 +98,7 @@ export function changeRangeToInstants(
 	change: { allDay: boolean; start: string; end: string },
 	timezone: string
 ): { start: Date; end: Date } {
+	timezone = safeTimezone(timezone);
 	if (change.allDay) {
 		return {
 			start: parseDate(change.start).toDate('UTC'),

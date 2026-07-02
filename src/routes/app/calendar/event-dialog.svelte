@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getLocalTimeZone, today } from '@internationalized/date';
+	import { toast } from 'svelte-sonner';
 	import { superForm, type Infer, type SuperValidated } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import { Button } from '$lib/components/ui/button';
@@ -45,7 +46,8 @@
 		validators: zod4Client(eventSchema),
 		onResult({ result }) {
 			if (result.type === 'redirect') open = false;
-		}
+		},
+		onError: () => toast.error(m.error_generic())
 	});
 
 	// svelte-ignore state_referenced_locally
@@ -58,7 +60,8 @@
 		validators: zod4Client(deleteEventSchema),
 		onResult({ result }) {
 			if (result.type === 'redirect') open = false;
-		}
+		},
+		onError: () => toast.error(m.error_generic())
 	});
 
 	const isEdit = $derived($form.id !== '');

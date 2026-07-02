@@ -3,6 +3,7 @@ export {
 	changeRangeToInstants,
 	formatTimeOfDay,
 	formValuesToRange,
+	safeTimezone,
 	toCalendarEvent,
 	toFormValues
 } from './mapping';
