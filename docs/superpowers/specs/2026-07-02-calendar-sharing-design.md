@@ -100,9 +100,9 @@ load and the notification fan-out, and is unit-tested.
   every member). Both carry the share-back action: the in-app notification renders a
   "Share your calendar back" button (form action creating the reciprocal share — recipient →
   original sharer — skipped if it already exists); the email CTA links to
-  `/app/notifications`. If a *team* shared with you, share-back shares *your* calendar with
-  that team. If a share targeted your team, a team owner/admin can share the team calendar
-  back to the sharer.
+  `/app/notifications`. Share-back always shares the *recipient's personal* calendar back
+  to the sharer entity: if a team shared with you, share-back shares your calendar with that
+  team. Sharing a *team* calendar back is done manually from the team page (owner/admin).
 - **Team invitations** use the plugin's `sendInvitationEmail` hook: email via the existing
   `email.ts` pattern (CTA → notifications page) plus a `team_invite` notification for
   registered invitees. The notifications page lists pending invitations with Accept/Decline
