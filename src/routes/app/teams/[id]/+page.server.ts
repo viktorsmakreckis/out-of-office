@@ -292,6 +292,11 @@ export const actions: Actions = {
 		let target: ShareEntity;
 		if (form.data.targetType === 'team') {
 			if (form.data.teamId === event.params.id) return fail(400, { form });
+			const [org] = await db
+				.select({ id: organization.id })
+				.from(organization)
+				.where(eq(organization.id, form.data.teamId));
+			if (!org) return setError(form, 'teamId', m.error_generic());
 			target = { type: 'org', id: form.data.teamId };
 		} else {
 			const [existing] = await db

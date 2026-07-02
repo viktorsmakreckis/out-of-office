@@ -4,7 +4,7 @@ import { m } from '$lib/paraglide/messages.js';
 export const shareTargetSchema = z
 	.object({
 		targetType: z.enum(['person', 'team'], { error: () => m.error_generic() }),
-		email: z.string().trim().default(''),
+		email: z.string().trim().toLowerCase().default(''),
 		teamId: z.string().default('')
 	})
 	.check((ctx) => {

@@ -18,4 +18,13 @@ describe('shareTargetSchema', () => {
 			false
 		);
 	});
+	it('normalizes email to lowercase', () => {
+		const result = shareTargetSchema.safeParse({
+			targetType: 'person',
+			email: 'Bob@Example.COM',
+			teamId: ''
+		});
+		expect(result.success).toBe(true);
+		expect(result.data?.email).toBe('bob@example.com');
+	});
 });

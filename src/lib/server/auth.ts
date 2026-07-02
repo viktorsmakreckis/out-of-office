@@ -69,7 +69,11 @@ export const auth = betterAuth({
 								.update(calendarShare)
 								.set({ targetUserId: newUser.id, targetEmail: null })
 								.where(eq(calendarShare.id, share.id));
-						} catch {
+						} catch (err) {
+							if ((err as { code?: string }).code !== '23505') {
+								console.error('[auth] pending share conversion failed:', err);
+								continue;
+							}
 							// The sharer already has an explicit share to this user: drop the pending row.
 							await db.delete(calendarShare).where(eq(calendarShare.id, share.id));
 							continue;

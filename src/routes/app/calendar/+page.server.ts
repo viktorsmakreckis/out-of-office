@@ -111,12 +111,16 @@ export const actions: Actions = {
 			if (updated.length === 0) error(404);
 			message = m.calendar_event_updated();
 		}
-		await notifyEventChange(
-			{ id: user.id, name: user.name },
-			form.data.id === '' ? 'created' : 'updated',
-			values.title,
-			values.type
-		);
+		try {
+			await notifyEventChange(
+				{ id: user.id, name: user.name },
+				form.data.id === '' ? 'created' : 'updated',
+				values.title,
+				values.type
+			);
+		} catch (err) {
+			console.error('[calendar] notification fan-out failed:', err);
+		}
 		redirect(303, calendarPath(event.url, user.timezone), { type: 'success', message }, event);
 	},
 	delete: async (event) => {
@@ -150,12 +154,16 @@ export const actions: Actions = {
 			.returning({ id: calendarEvent.id, type: calendarEvent.type, title: calendarEvent.title });
 		if (updated.length === 0) error(404);
 
-		await notifyEventChange(
-			{ id: user.id, name: user.name },
-			'updated',
-			updated[0].title,
-			updated[0].type
-		);
+		try {
+			await notifyEventChange(
+				{ id: user.id, name: user.name },
+				'updated',
+				updated[0].title,
+				updated[0].type
+			);
+		} catch (err) {
+			console.error('[calendar] notification fan-out failed:', err);
+		}
 
 		redirect(
 			303,

@@ -1,7 +1,7 @@
 import { error, fail, redirect as kitRedirect } from '@sveltejs/kit';
 import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import { redirect } from 'sveltekit-flash-message/server';
-import { superValidate } from 'sveltekit-superforms';
+import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
 import { shareIdSchema, shareTargetSchema } from '$lib/schemas/share';
@@ -116,6 +116,11 @@ export const actions: Actions = {
 
 		let target: ShareEntity;
 		if (form.data.targetType === 'team') {
+			const [org] = await db
+				.select({ id: organization.id })
+				.from(organization)
+				.where(eq(organization.id, form.data.teamId));
+			if (!org) return setError(form, 'teamId', m.error_generic());
 			target = { type: 'org', id: form.data.teamId };
 		} else {
 			if (form.data.email.toLowerCase() === currentUser.email.toLowerCase()) {
