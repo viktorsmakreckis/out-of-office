@@ -122,9 +122,11 @@
 							{eventTypeLabel($form.type)}
 						</Select.Trigger>
 						<Select.Content>
-							{#each eventTypes as type (type)}
-								<Select.Item value={type}>{eventTypeLabel(type)}</Select.Item>
-							{/each}
+							<Select.Group>
+								{#each eventTypes as type (type)}
+									<Select.Item value={type}>{eventTypeLabel(type)}</Select.Item>
+								{/each}
+							</Select.Group>
 						</Select.Content>
 					</Select.Root>
 					<Field.Error errors={toFieldErrors($errors.type)} />
