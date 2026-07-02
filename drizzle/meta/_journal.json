@@ -36,6 +36,13 @@
       "when": 1783028426059,
       "tag": "0004_teams",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783028710583,
+      "tag": "0005_calendar-sharing",
+      "breakpoints": true
     }
   ]
 }
