@@ -25,8 +25,23 @@
 
 	let dialog: ReturnType<typeof EventDialog> | undefined = $state();
 
+	// In-flight move/resize shown at its dropped position: the calendar reverts its
+	// drag preview on pointerup, and the persisted change only arrives with the next
+	// load — without this the event would snap back until the round-trip completes.
+	// Tied to the records array it was created against, so it self-disables as soon
+	// as fresh records (which already contain the persisted change) arrive.
+	// $state.raw: deep-proxying would break the identity check against data.records.
+	let pendingMove = $state.raw<{ records: unknown; event: CalendarEvent<EventRecord> } | null>(
+		null
+	);
+
 	const events = $derived(
-		data.records.map((record) => toCalendarEvent(record, data.user.timezone))
+		data.records.map((record) => {
+			const event = toCalendarEvent(record, data.user.timezone);
+			return pendingMove?.records === data.records && pendingMove.event.id === event.id
+				? pendingMove.event
+				: event;
+		})
 	);
 	const actionParams = $derived(`&view=${view}&date=${date.toString()}`);
 
@@ -39,9 +54,15 @@
 		id: 'move',
 		validators: zod4Client(moveEventSchema),
 		onUpdated({ form }) {
-			if (!form.valid) toast.error(m.error_generic());
+			if (!form.valid) {
+				pendingMove = null;
+				toast.error(m.error_generic());
+			}
 		},
-		onError: () => toast.error(m.error_generic())
+		onError: () => {
+			pendingMove = null;
+			toast.error(m.error_generic());
+		}
 	});
 
 	function handleDayClick(day: CalendarDate) {
@@ -71,6 +92,11 @@
 	}
 
 	async function handleEventChange(event: CalendarEvent<EventRecord>, change: EventChange) {
+		pendingMove = {
+			records: data.records,
+			// Safe cast: the component guarantees change.allDay matches event.allDay.
+			event: { ...event, ...change } as CalendarEvent<EventRecord>
+		};
 		$moveForm.id = event.id;
 		$moveForm.allDay = change.allDay;
 		$moveForm.start = change.start.toString();
