@@ -43,8 +43,8 @@ export const calendarEvent = pgTable(
 		type: eventTypeEnum('type').notNull(),
 		title: text('title'), // required for 'other', optional note otherwise
 		allDay: boolean('all_day').notNull(),
-		start: timestamp('start', { mode: 'string' }).notNull(),
-		end: timestamp('end', { mode: 'string' }).notNull(),
+		start: timestamp('start', { withTimezone: true, mode: 'date' }).notNull(),
+		end: timestamp('end', { withTimezone: true, mode: 'date' }).notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 	},
@@ -54,17 +54,25 @@ export const calendarEvent = pgTable(
 
 Timestamp semantics — the interpretation rule is owned by mapping helpers, nowhere else:
 
-- Columns are `timestamp` **without time zone**, read in `mode: 'string'` so values stay
-  floating local times. They are never coerced through a JS `Date` (an instant), which
-  would apply timezone shifts the calendar component explicitly avoids (see
-  `docs/calendar.md`, Timezone handling).
-- Timed events (`allDay = false`): exact datetimes, `end` exclusive.
-- All-day events (`allDay = true`): midnight timestamps; only the date part is
-  meaningful. `end` is end-inclusive: a one-day event has `start = end` = that day at
-  00:00, mirroring the component's `CalendarDate` model.
-- Postgres returns `mode: 'string'` timestamps as `YYYY-MM-DD HH:MM:SS` (space
-  separator); the mapping helpers normalize to the `T`-separated ISO form that
-  `parseDateTime` expects, and serialize back when writing.
+- Columns are `timestamptz` (**with** time zone), read in `mode: 'date'` — values are
+  real instants, which JS `Date` represents safely.
+- The calendar component itself performs no timezone conversion (it takes floating local
+  times), so conversion happens at the boundary, in the mapping helpers, using the
+  signed-in user's profile timezone (`user.timezone`, already collected at signup and
+  editable in settings; fall back to `UTC` when invalid).
+- Timed events (`allDay = false`): stored as exact instants, `end` exclusive.
+  - Load: instant → `parseAbsolute(date.toISOString(), userTimezone)` →
+    `toCalendarDateTime(...)` → floating `CalendarDateTime` for display.
+  - Save: form date+time strings → `CalendarDateTime` → `toZoned(value, userTimezone)`
+    → `toDate()` → instant. DST-nonexistent/ambiguous local times resolve with
+    `@internationalized/date` disambiguation defaults.
+- All-day events (`allDay = true`): calendar dates are timezone-independent, so they are
+  stored as **UTC midnight** of the date and the date part is read back in UTC. `end`
+  stays end-inclusive: a one-day event has `start = end` = that day at 00:00 UTC. This
+  keeps all-day rows stable if the user later changes their profile timezone.
+- Known trade-off: events display in the profile timezone, while the calendar's "today"
+  highlight and current-time line use the browser timezone (component behavior). These
+  agree whenever the profile timezone matches the browser's, which settings encourage.
 
 ## Type → color mapping
 
@@ -191,8 +199,9 @@ Vitest unit tests, same style as `src/lib/components/calendar/core/*.test.ts`:
 - `event` schema: other-requires-title, all-day `end ≥ start`, timed `end > start`,
   date/time format rejection.
 - `move` schema: parse/ordering rules for both variants.
-- Mapping helpers: row → `CalendarEvent` (all-day midnight/date-part rule, color/title
-  derivation) and form values → row (round-trip).
+- Mapping helpers: row → `CalendarEvent` (all-day UTC-midnight rule, timed
+  instant→profile-timezone conversion, color/title derivation) and form values → row
+  (round-trip, including a DST-crossing case).
 
 No component/E2E tests — consistent with the current repo, which unit-tests pure logic
 only.
