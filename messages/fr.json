@@ -2,6 +2,7 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"app_name": "Out of Office",
 	"error_generic": "Une erreur s'est produite. Veuillez réessayer.",
+	"rate_limit_exceeded": "Trop de tentatives. Veuillez réessayer plus tard.",
 	"save": "Enregistrer",
 	"cancel": "Annuler",
 	"nav_home": "Accueil",

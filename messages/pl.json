@@ -2,6 +2,7 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"app_name": "Out of Office",
 	"error_generic": "Coś poszło nie tak. Spróbuj ponownie.",
+	"rate_limit_exceeded": "Zbyt wiele prób. Spróbuj ponownie później.",
 	"save": "Zapisz",
 	"cancel": "Anuluj",
 	"nav_home": "Start",

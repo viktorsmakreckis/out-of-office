@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect as kitRedirect } from '@sveltejs/kit';
 import { redirect } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
@@ -12,6 +12,7 @@ import {
 } from '$lib/schemas/auth';
 import { auth } from '$lib/server/auth';
 import { authErrorMessage } from '$lib/server/auth-error';
+import { checkRateLimit } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ parent }) => {
@@ -62,6 +63,15 @@ export const actions: Actions = {
 		});
 		if (!form.valid) return fail(400, { form });
 
+		const user = event.locals.user;
+		if (!user) throw kitRedirect(303, '/login');
+		const limitOk = await checkRateLimit({
+			key: `change-email:user:${user.id}`,
+			max: 3,
+			windowSeconds: 3600
+		});
+		if (!limitOk) return setError(form, 'newEmail', m.rate_limit_exceeded());
+
 		try {
 			await auth.api.changeEmail({
 				body: { newEmail: form.data.newEmail, callbackURL: '/app/settings' },
@@ -78,6 +88,15 @@ export const actions: Actions = {
 			id: 'changePassword'
 		});
 		if (!form.valid) return fail(400, { form });
+
+		const user = event.locals.user;
+		if (!user) throw kitRedirect(303, '/login');
+		const limitOk = await checkRateLimit({
+			key: `change-password:user:${user.id}`,
+			max: 5,
+			windowSeconds: 900
+		});
+		if (!limitOk) return setError(form, 'currentPassword', m.rate_limit_exceeded());
 
 		try {
 			await auth.api.changePassword({
@@ -104,6 +123,15 @@ export const actions: Actions = {
 			id: 'deleteAccount'
 		});
 		if (!form.valid) return fail(400, { form });
+
+		const user = event.locals.user;
+		if (!user) throw kitRedirect(303, '/login');
+		const limitOk = await checkRateLimit({
+			key: `delete-account:user:${user.id}`,
+			max: 5,
+			windowSeconds: 900
+		});
+		if (!limitOk) return setError(form, 'password', m.rate_limit_exceeded());
 
 		try {
 			await auth.api.deleteUser({

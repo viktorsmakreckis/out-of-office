@@ -7,6 +7,7 @@ import { m } from '$lib/paraglide/messages.js';
 import { loginSchema } from '$lib/schemas/auth';
 import { auth } from '$lib/server/auth';
 import { authErrorMessage } from '$lib/server/auth-error';
+import { checkRateLimit } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -17,6 +18,12 @@ export const actions: Actions = {
 	default: async (event) => {
 		const form = await superValidate(event.request, zod4(loginSchema));
 		if (!form.valid) return fail(400, { form });
+
+		const limitOk = await checkRateLimit(
+			{ key: `login:email:${form.data.email.toLowerCase()}`, max: 5, windowSeconds: 900 },
+			{ key: `login:ip:${event.getClientAddress()}`, max: 10, windowSeconds: 900 }
+		);
+		if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
 
 		try {
 			await auth.api.signInEmail({

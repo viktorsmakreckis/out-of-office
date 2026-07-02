@@ -8,6 +8,7 @@ import { getLocale } from '$lib/paraglide/runtime';
 import { signupSchema } from '$lib/schemas/auth';
 import { auth } from '$lib/server/auth';
 import { authErrorMessage } from '$lib/server/auth-error';
+import { checkRateLimit } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -22,6 +23,13 @@ export const actions: Actions = {
 	default: async (event) => {
 		const form = await superValidate(event.request, zod4(signupSchema));
 		if (!form.valid) return fail(400, { form });
+
+		const limitOk = await checkRateLimit({
+			key: `signup:ip:${event.getClientAddress()}`,
+			max: 10,
+			windowSeconds: 3600
+		});
+		if (!limitOk) return setError(form, '', m.rate_limit_exceeded());
 
 		try {
 			await auth.api.signUpEmail({
