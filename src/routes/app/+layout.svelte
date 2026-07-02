@@ -5,14 +5,16 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as NavigationMenu from '$lib/components/ui/navigation-menu';
-	import { setMode } from 'mode-watcher';
+	import { setMode, userPrefersMode } from 'mode-watcher';
 	import { m } from '$lib/paraglide/messages.js';
-	import { locales, setLocale, type Locale } from '$lib/paraglide/runtime';
+	import { getLocale, locales, setLocale, type Locale } from '$lib/paraglide/runtime';
 
 	let { data, children } = $props();
 
 	// Endonyms are intentionally not translated.
 	const localeLabels: Record<Locale, string> = { en: 'English', pl: 'Polski', fr: 'Français' };
+	// setLocale() reloads the page, so the current locale is stable per render.
+	const currentLocale = getLocale();
 
 	const initials = $derived(
 		data.user.name
@@ -47,8 +49,12 @@
 				<DropdownMenu.Content align="end" class="w-56">
 					<DropdownMenu.Label>
 						<div class="grid">
-							<span>{data.user.name}</span>
-							<span class="text-xs font-normal text-muted-foreground">{data.user.email}</span>
+							<span class="line-clamp-1 text-wrap wrap-anywhere" title={data.user.name}>
+								{data.user.name}
+							</span>
+							<span class="line-clamp-1 text-wrap wrap-anywhere" title={data.user.email}>
+								{data.user.email}
+							</span>
 						</div>
 					</DropdownMenu.Label>
 					<DropdownMenu.Separator />
@@ -60,29 +66,41 @@
 					<DropdownMenu.Sub>
 						<DropdownMenu.SubTrigger>{m.menu_theme()}</DropdownMenu.SubTrigger>
 						<DropdownMenu.SubContent>
-							<DropdownMenu.Item onSelect={() => setMode('light')}>
+							<DropdownMenu.CheckboxItem
+								checked={userPrefersMode.current === 'light'}
+								onSelect={() => setMode('light')}
+							>
 								{m.theme_light()}
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onSelect={() => setMode('dark')}>
+							</DropdownMenu.CheckboxItem>
+							<DropdownMenu.CheckboxItem
+								checked={userPrefersMode.current === 'dark'}
+								onSelect={() => setMode('dark')}
+							>
 								{m.theme_dark()}
-							</DropdownMenu.Item>
-							<DropdownMenu.Item onSelect={() => setMode('system')}>
+							</DropdownMenu.CheckboxItem>
+							<DropdownMenu.CheckboxItem
+								checked={userPrefersMode.current === 'system'}
+								onSelect={() => setMode('system')}
+							>
 								{m.theme_system()}
-							</DropdownMenu.Item>
+							</DropdownMenu.CheckboxItem>
 						</DropdownMenu.SubContent>
 					</DropdownMenu.Sub>
 					<DropdownMenu.Sub>
 						<DropdownMenu.SubTrigger>{m.menu_language()}</DropdownMenu.SubTrigger>
 						<DropdownMenu.SubContent>
 							{#each locales as locale (locale)}
-								<DropdownMenu.Item onSelect={() => setLocale(locale)}>
+								<DropdownMenu.CheckboxItem
+									checked={locale === currentLocale}
+									onSelect={() => setLocale(locale)}
+								>
 									{localeLabels[locale]}
-								</DropdownMenu.Item>
+								</DropdownMenu.CheckboxItem>
 							{/each}
 						</DropdownMenu.SubContent>
 					</DropdownMenu.Sub>
 					<DropdownMenu.Separator />
-					<DropdownMenu.Item variant="destructive">
+					<DropdownMenu.Item variant="destructive" class="w-full">
 						{#snippet child({ props })}
 							<button {...props} type="submit" form="signout-form">
 								{m.menu_sign_out()}
