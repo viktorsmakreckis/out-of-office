@@ -11,6 +11,7 @@
 
 	let { data } = $props();
 
+	// svelte-ignore state_referenced_locally
 	const { form, errors, submitting, enhance } = superForm(data.form);
 </script>
 

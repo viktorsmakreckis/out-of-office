@@ -12,6 +12,7 @@
 
 	let { data } = $props();
 
+	// svelte-ignore state_referenced_locally
 	const { form, errors, constraints, submitting, enhance } = superForm(data.form, {
 		validators: zod4Client(resetPasswordSchema)
 	});
