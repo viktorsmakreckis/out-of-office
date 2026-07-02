@@ -37,8 +37,9 @@ settings. Everything is fully internationalized (`en`, `pl`, `fr`).
     (localized email via Resend), revoke other sessions on password reset.
   - `emailVerification`: `sendOnSignUp: true`,
     `autoSignInAfterVerification: true`, localized `sendVerificationEmail`.
-  - `user.changeEmail.enabled: true` — verification email sent to the **new**
-    address.
+  - `user.changeEmail.enabled: true` — two-step: a confirmation link is sent
+    to the **current** address; once confirmed, better-auth sends a
+    verification link to the **new** address, which finalizes the change.
   - `user.deleteUser.enabled: true` — password-confirmed, no email round-trip.
 
 ### 2. Email layer
@@ -108,8 +109,9 @@ Four `field`-structured superforms on one page:
 
 1. **Profile** — name, language select, timezone select. Saving language also
    switches the UI locale.
-2. **Change email** — sends verification to the new address; flash "check
-   your inbox".
+2. **Change email** — sends a confirmation link to the current address
+   (better-auth then verifies the new address); flash "check your current
+   inbox".
 3. **Change password** — current + new password; revokes other sessions.
 4. **Delete account** — password confirmation inside an `alert-dialog`;
    afterwards sign out and redirect to `/login`.
