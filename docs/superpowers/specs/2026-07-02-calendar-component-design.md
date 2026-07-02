@@ -5,9 +5,7 @@
 
 ## Purpose
 
-A generic, extensible, event-agnostic calendar component (`$lib/components/calendar`) with Month, Week, and Agenda views, styled to the existing shadcn-svelte **luma** conventions. It will later power the out-of-office feature (own + colleagues' annual leave and other absences), but this effort delivers only the reusable component plus a demo page — no database or server work.
-
-Relationship to prior work: the full OOO app design (2026-07-01, since removed) remains directional background. This spec deliberately narrows to the calendar UI layer; domain concerns (entry types, sharing, visibility, notifications, timezone storage) arrive later as consumers of this component.
+A generic, extensible, event-agnostic calendar component (`$lib/components/calendar`) with Month, Week, and Agenda views, styled to the existing shadcn-svelte **luma** conventions. It will later power the out-of-office feature (own + colleagues' annual leave and other absences), but this effort delivers only the reusable component plus a demo page — no database or server work. Domain concerns (entry types, sharing, visibility, notifications, timezone storage) arrive later as consumers of this component and will be designed then.
 
 ## Scope
 
@@ -46,7 +44,7 @@ type CalendarEvent<T = unknown> =
 
 - Dates use `@internationalized/date` (already a dependency; same library as bits-ui).
 - **All-day events**: `CalendarDate` pair, **end-inclusive** (a one-day event has `start.compare(end) === 0`). Never timezone-converted.
-- **Timed events**: `CalendarDateTime` pair (floating local time), end-exclusive as usual for instants. **The component performs no timezone conversion** — consumers convert stored UTC instants to the viewer's zone before passing events in. This keeps the component pure and pushes policy to the caller, matching the prior spec's "display in viewer's timezone" rule.
+- **Timed events**: `CalendarDateTime` pair (floating local time), end-exclusive as usual for instants. **The component performs no timezone conversion** — consumers convert stored instants to whatever zone they want displayed before passing events in. This keeps the component pure and pushes timezone policy to the caller.
 - `EventColor = 'blue' | 'green' | 'amber' | 'red' | 'violet' | 'rose' | 'gray'` — a fixed semantic palette implemented as Tailwind class variants tuned for light and dark mode. Domain meaning (vacation = blue, sick = red, …) is assigned by consumers.
 - Invalid events (end before start) are skipped in rendering with a dev-mode console warning; the component never throws on bad data.
 
@@ -130,7 +128,7 @@ src/lib/components/calendar/
 
 - ~15 in-memory sample events exercising every rendering path: multi-week span, overlapping timed events, >4 events on one day (overflow), every color, an `editable: false` event, short (<30 min) events.
 - Sample events are generated relative to the current month so the page always demonstrates a populated view.
-- `view` and `date` mirrored to query params (`?view=week&date=2026-07-02`) — linkable and SSR-rendered, the navigation pattern the prior spec approved.
+- `view` and `date` mirrored to query params (`?view=week&date=2026-07-02`) — linkable, SSR-rendered, back-button friendly.
 - Callbacks wired to sonner toasts (`onRangeSelect` → "Selected 3–5 Jul", `onEventChange` applies the change to the local array and toasts) so every interaction is verifiable by hand.
 - Nav link "Calendar" added to the app header next to "Home" (new `nav_calendar` message).
 
