@@ -111,13 +111,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			.innerJoin(organization, eq(member.organizationId, organization.id))
 			.where(eq(member.userId, currentUser.id))
 	]);
-	const [inviteForm, roleForm, memberForm, renameForm, shareForm, revokeForm] = await Promise.all([
+	const [inviteForm, renameForm, shareForm] = await Promise.all([
 		superValidate(zod4(inviteMemberSchema), { id: 'invite' }),
-		superValidate(zod4(updateRoleSchema), { id: 'role' }),
-		superValidate(zod4(memberIdSchema), { id: 'member' }),
 		superValidate({ name: team.name }, zod4(renameTeamSchema), { id: 'rename' }),
-		superValidate(zod4(shareTargetSchema), { id: 'share' }),
-		superValidate(zod4(shareIdSchema), { id: 'revoke' })
+		superValidate(zod4(shareTargetSchema), { id: 'share' })
 	]);
 	return {
 		team,
@@ -127,13 +124,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		// Teams the team calendar could be shared with (exclude this team itself).
 		shareableTeams: myTeams.filter((t) => t.id !== params.id),
 		myRole: membership.role,
-		myMemberId: membership.id,
 		inviteForm,
-		roleForm,
-		memberForm,
 		renameForm,
-		shareForm,
-		revokeForm
+		shareForm
 	};
 };
 
@@ -166,6 +159,8 @@ export const actions: Actions = {
 		);
 	},
 
+	// requireManager is the first layer; better-auth's removeMember/updateMemberRole are the
+	// second — they reject removing/demoting the owner and reject memberIds outside organizationId.
 	removeMember: async (event) => {
 		const form = await superValidate(event.request, zod4(memberIdSchema), { id: 'member' });
 		if (!form.valid) return fail(400, { form });
@@ -187,6 +182,7 @@ export const actions: Actions = {
 		);
 	},
 
+	// See removeMember above: better-auth enforces owner-immutability and org-scoped memberIds.
 	updateRole: async (event) => {
 		const form = await superValidate(event.request, zod4(updateRoleSchema), { id: 'role' });
 		if (!form.valid) return fail(400, { form });
@@ -219,6 +215,9 @@ export const actions: Actions = {
 		const membership = await requireMembership(currentUser.id, event.params.id);
 		if (membership.role !== 'owner') error(403, m.error_forbidden());
 		try {
+			// Accepted risk: these two calls are not transactional. If the promote succeeds and
+			// this self-demote fails, the team temporarily has two owners; re-running the action
+			// completes the demotion.
 			await auth.api.updateMemberRole({
 				body: { memberId: form.data.memberId, role: 'owner', organizationId: event.params.id },
 				headers: event.request.headers
