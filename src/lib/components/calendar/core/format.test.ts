@@ -30,6 +30,7 @@ describe('formatWeekLabel', () => {
 		expect(label).toContain('29');
 		expect(label).toContain('5');
 		expect(label).toContain('2026');
+		expect(label).toMatch(/Jun|Jul/);
 	});
 });
 

@@ -104,17 +104,26 @@
 				const dayDelta = active.targetDay - active.anchorDay;
 				const minuteDelta = active.targetMinute - active.anchorMinute;
 				if (dayDelta === 0 && minuteDelta === 0) return null;
-				return movedTimed(active.event.start, active.event.end, dayDelta, minuteDelta);
+				return {
+					allDay: false,
+					...movedTimed(active.event.start, active.event.end, dayDelta, minuteDelta)
+				};
 			}
 			case 'grid-resize':
-				return resizedTimed(active.event.start, days[active.targetDay], active.targetMinute);
+				return {
+					allDay: false,
+					...resizedTimed(active.event.start, days[active.targetDay], active.targetMinute)
+				};
 			case 'lane-move': {
 				const delta = daysBetween(active.anchor, active.target);
 				if (delta === 0) return null;
-				return movedAllDay(active.event.start, active.event.end, delta);
+				return { allDay: true, ...movedAllDay(active.event.start, active.event.end, delta) };
 			}
 			case 'lane-resize':
-				return resizedAllDay(active.event.start, active.event.end, active.edge, active.target);
+				return {
+					allDay: true,
+					...resizedAllDay(active.event.start, active.event.end, active.edge, active.target)
+				};
 			default:
 				return null;
 		}
@@ -126,9 +135,7 @@
 		const change = draggedChange(drag);
 		if (!change) return events;
 		const dragged = drag.event;
-		return events.map((event) =>
-			event.id === dragged.id ? ({ ...event, ...change } as CalendarEvent<T>) : event
-		);
+		return events.map((event) => (event.id === dragged.id ? { ...event, ...change } : event));
 	});
 
 	const allDayEvents = $derived(

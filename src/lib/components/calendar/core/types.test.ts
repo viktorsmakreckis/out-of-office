@@ -1,5 +1,5 @@
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
 	compareEvents,
 	daysBetween,
@@ -43,8 +43,11 @@ describe('isValidEvent', () => {
 
 describe('validEvents', () => {
 	it('filters out invalid events', () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		const events = [allDay('good', d(1), d(2)), allDay('bad', d(3), d(1))];
 		expect(validEvents(events).map((e) => e.id)).toEqual(['good']);
+		expect(warn).toHaveBeenCalledOnce();
+		warn.mockRestore();
 	});
 });
 

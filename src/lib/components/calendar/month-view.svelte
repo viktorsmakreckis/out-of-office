@@ -77,11 +77,14 @@
 			const delta = daysBetween(active.anchor, active.target);
 			if (delta === 0) return null;
 			return active.event.allDay
-				? movedAllDay(active.event.start, active.event.end, delta)
-				: movedTimed(active.event.start, active.event.end, delta, 0);
+				? { allDay: true, ...movedAllDay(active.event.start, active.event.end, delta) }
+				: { allDay: false, ...movedTimed(active.event.start, active.event.end, delta, 0) };
 		}
 		if (active.kind === 'resize') {
-			return resizedAllDay(active.event.start, active.event.end, active.edge, active.target);
+			return {
+				allDay: true,
+				...resizedAllDay(active.event.start, active.event.end, active.edge, active.target)
+			};
 		}
 		return null;
 	}
@@ -91,9 +94,7 @@
 		const change = draggedChange(drag);
 		if (!change) return events;
 		const dragged = drag.event;
-		return events.map((event) =>
-			event.id === dragged.id ? ({ ...event, ...change } as CalendarEvent<T>) : event
-		);
+		return events.map((event) => (event.id === dragged.id ? { ...event, ...change } : event));
 	});
 
 	const selection = $derived(

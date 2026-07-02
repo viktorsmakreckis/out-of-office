@@ -71,12 +71,12 @@ Prev/next navigation steps by one week in the week view and by one month otherwi
 
 All callbacks are optional. Omitting a callback disables the interaction that reports through it (for example, without `onEventChange`, no event can be dragged or resized).
 
-| Callback        | Signature                                                | Fires when                                                                                                                                                                                                                                                                                                          |
-| --------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `onDayClick`    | `(date: CalendarDate) => void`                           | A month cell or a week-view all-day-lane slot is clicked (or activated with Enter/Space).                                                                                                                                                                                                                           |
-| `onEventClick`  | `(event: CalendarEvent<T>) => void`                      | An event chip, block, or agenda row is clicked (or activated via keyboard).                                                                                                                                                                                                                                         |
-| `onRangeSelect` | `(range: RangeSelection) => void`                        | A drag-selection completes. Month view and the week all-day lane produce `{ allDay: true, start, end }` (`CalendarDate`, ordered, end-inclusive). The week time grid produces `{ allDay: false, start, end }` (`CalendarDateTime`, snapped to 15 minutes, minimum 15 minutes, confined to the drag's starting day). |
-| `onEventChange` | `(event: CalendarEvent<T>, change: EventChange) => void` | A move or resize drag completes. `change` is `{ start, end }` in the same date types as the event. The component shows a live preview during the drag but reverts on drop — committing the change is the consumer's job (see below).                                                                                |
+| Callback        | Signature                                                | Fires when                                                                                                                                                                                                                                                                                                                    |
+| --------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `onDayClick`    | `(date: CalendarDate) => void`                           | A month cell or a week-view all-day-lane slot is clicked (or activated with Enter/Space).                                                                                                                                                                                                                                     |
+| `onEventClick`  | `(event: CalendarEvent<T>) => void`                      | An event chip, block, or agenda row is clicked (or activated via keyboard).                                                                                                                                                                                                                                                   |
+| `onRangeSelect` | `(range: RangeSelection) => void`                        | A drag-selection completes. Month view and the week all-day lane produce `{ allDay: true, start, end }` (`CalendarDate`, ordered, end-inclusive). The week time grid produces `{ allDay: false, start, end }` (`CalendarDateTime`, snapped to 15 minutes, minimum 15 minutes, confined to the drag's starting day).           |
+| `onEventChange` | `(event: CalendarEvent<T>, change: EventChange) => void` | A move or resize drag completes. `change` is a discriminated union `{ allDay, start, end }` matching the event's `allDay` (`CalendarDate` dates for all-day, `CalendarDateTime` for timed). The component shows a live preview during the drag but reverts on drop — committing the change is the consumer's job (see below). |
 
 ### Controlled updates
 
@@ -87,7 +87,7 @@ The component never modifies `events`. To accept a proposed move/resize, apply t
 	{events}
 	onEventChange={(event, change) => {
 		events = events.map((existing) =>
-			existing.id === event.id ? ({ ...existing, ...change } as CalendarEvent) : existing
+			existing.id === event.id ? { ...existing, ...change } : existing
 		);
 	}}
 />
@@ -274,7 +274,7 @@ export const load: PageLoad = ({ url }) => {
 		toast.success(`Selected ${range.start.toString()} → ${range.end.toString()}`)}
 	onEventChange={(event, change) => {
 		events = events.map((existing) =>
-			existing.id === event.id ? ({ ...existing, ...change } as CalendarEvent) : existing
+			existing.id === event.id ? { ...existing, ...change } : existing
 		);
 		toast.success(`Updated "${event.title}"`);
 	}}

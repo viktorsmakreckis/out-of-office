@@ -52,6 +52,11 @@ describe('packLanes', () => {
 		);
 	});
 
+	it('keeps the in-row event and drops the outside one when mixed', () => {
+		const segments = packLanes([allDay('before', 1, 5), allDay('inside', 8, 9)], rowStart, 7);
+		expect(segments.map((s) => s.event.id)).toEqual(['inside']);
+	});
+
 	it('includes timed events as single-column segments via their date span', () => {
 		const meeting: TimedEvent = {
 			id: 'meeting',

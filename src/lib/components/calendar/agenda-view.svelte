@@ -74,7 +74,7 @@
 									{@render agendaItem(event)}
 								{:else}
 									<span class={dotVariants({ color: event.color })}></span>
-									<span class="text-muted-foreground w-36 shrink-0 truncate">
+									<span class="text-muted-foreground min-w-36 shrink-0 whitespace-nowrap">
 										{event.allDay
 											? m.calendar_all_day()
 											: formatTimeRange(event.start, event.end, locale)}

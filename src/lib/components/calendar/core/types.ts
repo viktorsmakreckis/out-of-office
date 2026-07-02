@@ -39,7 +39,8 @@ export type RangeSelection =
 	| { allDay: false; start: CalendarDateTime; end: CalendarDateTime };
 
 export type EventChange =
-	{ start: CalendarDate; end: CalendarDate } | { start: CalendarDateTime; end: CalendarDateTime };
+	| { allDay: true; start: CalendarDate; end: CalendarDate }
+	| { allDay: false; start: CalendarDateTime; end: CalendarDateTime };
 
 export function isValidEvent(event: CalendarEvent<unknown>): boolean {
 	return event.allDay ? event.start.compare(event.end) <= 0 : event.start.compare(event.end) < 0;
