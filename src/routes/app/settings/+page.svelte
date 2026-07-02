@@ -102,7 +102,11 @@
 							value={$profileForm.locale}
 							onValueChange={(value) => ($profileForm.locale = value as Locale)}
 						>
-							<Select.Trigger id="profile-locale" class="w-full">
+							<Select.Trigger
+								id="profile-locale"
+								class="w-full"
+								aria-invalid={$profileErrors.locale ? 'true' : undefined}
+							>
 								{localeLabels[$profileForm.locale]}
 							</Select.Trigger>
 							<Select.Content>
@@ -118,7 +122,11 @@
 					<Field.Field data-invalid={!!$profileErrors.timezone || undefined}>
 						<Field.Label for="profile-timezone">{m.settings_timezone_label()}</Field.Label>
 						<Select.Root type="single" name="timezone" bind:value={$profileForm.timezone}>
-							<Select.Trigger id="profile-timezone" class="w-full">
+							<Select.Trigger
+								id="profile-timezone"
+								class="w-full"
+								aria-invalid={$profileErrors.timezone ? 'true' : undefined}
+							>
 								{$profileForm.timezone}
 							</Select.Trigger>
 							<Select.Content class="max-h-72">

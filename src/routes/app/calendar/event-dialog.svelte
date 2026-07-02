@@ -114,7 +114,11 @@
 						value={$form.type}
 						onValueChange={(value) => ($form.type = value as EventType)}
 					>
-						<Select.Trigger id="event-type" class="w-full">
+						<Select.Trigger
+							id="event-type"
+							class="w-full"
+							aria-invalid={$errors.type ? 'true' : undefined}
+						>
 							{eventTypeLabel($form.type)}
 						</Select.Trigger>
 						<Select.Content>
@@ -140,9 +144,15 @@
 					/>
 					<Field.Error errors={toFieldErrors($errors.title)} />
 				</Field.Field>
-				<Field.Field orientation="horizontal">
+				<Field.Field orientation="horizontal" data-invalid={!!$errors.allDay || undefined}>
 					<Field.Label for="event-all-day">{m.calendar_event_all_day_label()}</Field.Label>
-					<Switch id="event-all-day" name="allDay" bind:checked={$form.allDay} />
+					<Switch
+						id="event-all-day"
+						name="allDay"
+						bind:checked={$form.allDay}
+						aria-invalid={$errors.allDay ? 'true' : undefined}
+					/>
+					<Field.Error errors={toFieldErrors($errors.allDay)} />
 				</Field.Field>
 				<div class="grid grid-cols-2 gap-4">
 					<Field.Field data-invalid={!!$errors.startDate || undefined}>
