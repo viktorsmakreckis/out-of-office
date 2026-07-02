@@ -1,0 +1,116 @@
+<script lang="ts">
+	import { parseDate, toCalendarDate, type CalendarDate } from '@internationalized/date';
+	import { toast } from 'svelte-sonner';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import { goto } from '$app/navigation';
+	import { Button } from '$lib/components/ui/button';
+	import {
+		Calendar,
+		type CalendarEvent,
+		type EventChange,
+		type RangeSelection
+	} from '$lib/components/calendar';
+	import { formatTimeOfDay, toCalendarEvent, type EventRecord } from '$lib/events';
+	import { m } from '$lib/paraglide/messages.js';
+	import { moveEventSchema } from '$lib/schemas/event';
+	import EventDialog from './event-dialog.svelte';
+
+	let { data } = $props();
+	// svelte-ignore state_referenced_locally
+	let view = $state(data.view);
+	// svelte-ignore state_referenced_locally
+	let date = $state(parseDate(data.date));
+
+	let dialog: ReturnType<typeof EventDialog> | undefined = $state();
+
+	const events = $derived(
+		data.records.map((record) => toCalendarEvent(record, data.user.timezone))
+	);
+	const actionParams = $derived(`&view=${view}&date=${date.toString()}`);
+
+	// svelte-ignore state_referenced_locally
+	const {
+		form: moveForm,
+		enhance: moveEnhance,
+		submit: submitMove
+	} = superForm(data.moveForm, {
+		id: 'move',
+		validators: zod4Client(moveEventSchema),
+		onUpdated({ form }) {
+			if (!form.valid) toast.error(m.error_generic());
+		}
+	});
+
+	function handleDayClick(day: CalendarDate) {
+		dialog?.openCreate({ allDay: true, startDate: day.toString(), endDate: day.toString() });
+	}
+
+	function handleRangeSelect(range: RangeSelection) {
+		if (range.allDay) {
+			dialog?.openCreate({
+				allDay: true,
+				startDate: range.start.toString(),
+				endDate: range.end.toString()
+			});
+		} else {
+			dialog?.openCreate({
+				allDay: false,
+				startDate: toCalendarDate(range.start).toString(),
+				endDate: toCalendarDate(range.end).toString(),
+				startTime: formatTimeOfDay(range.start),
+				endTime: formatTimeOfDay(range.end)
+			});
+		}
+	}
+
+	function handleEventClick(event: CalendarEvent<EventRecord>) {
+		if (event.data) dialog?.openEdit(event.data);
+	}
+
+	function handleEventChange(event: CalendarEvent<EventRecord>, change: EventChange) {
+		$moveForm.id = event.id;
+		$moveForm.allDay = change.allDay;
+		$moveForm.start = change.start.toString();
+		$moveForm.end = change.end.toString();
+		submitMove();
+	}
+
+	$effect(() => {
+		const params = new URLSearchParams({ view, date: date.toString() });
+		// Query-only relative navigation has no resolve()-compatible form.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		goto(`?${params}`, { replaceState: true, keepFocus: true, noScroll: true });
+	});
+</script>
+
+<svelte:head><title>{m.nav_calendar()} · {m.app_name()}</title></svelte:head>
+
+<Calendar
+	{events}
+	bind:view
+	bind:date
+	onDayClick={handleDayClick}
+	onEventClick={handleEventClick}
+	onRangeSelect={handleRangeSelect}
+	onEventChange={handleEventChange}
+>
+	{#snippet headerActions()}
+		<Button onclick={() => dialog?.openCreate()}>{m.calendar_event_add()}</Button>
+	{/snippet}
+</Calendar>
+
+<EventDialog
+	bind:this={dialog}
+	eventForm={data.eventForm}
+	deleteForm={data.deleteForm}
+	timezone={data.user.timezone}
+	{actionParams}
+/>
+
+<form method="POST" action={`?/move${actionParams}`} use:moveEnhance class="hidden">
+	<input type="hidden" name="id" value={$moveForm.id} />
+	<input type="hidden" name="allDay" value={$moveForm.allDay} />
+	<input type="hidden" name="start" value={$moveForm.start} />
+	<input type="hidden" name="end" value={$moveForm.end} />
+</form>
