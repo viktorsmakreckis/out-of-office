@@ -1,5 +1,4 @@
 import { Resend } from 'resend';
-import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { m } from '$lib/paraglide/messages.js';
 import { baseLocale, isLocale, type Locale } from '$lib/paraglide/runtime';
@@ -73,7 +72,10 @@ export function changeEmailConfirmationEmail(
 
 export async function sendEmail(to: string, content: EmailContent): Promise<void> {
 	if (!env.RESEND_API_KEY) {
-		if (dev) {
+		// Dev mode is read via $env/dynamic/private (not $app/environment) so the better-auth
+		// CLI can load this module. Vite sets NODE_ENV=development under `pnpm dev`; production
+		// (or unset) keeps the strict throw.
+		if (env.NODE_ENV === 'development') {
 			console.info(`[email] to=${to} subject="${content.subject}"\n${content.text}`);
 			return;
 		}
