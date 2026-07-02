@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { changeEmailConfirmationEmail, userLocale, verificationEmail } from './email';
+import {
+	calendarSharedEmail,
+	changeEmailConfirmationEmail,
+	eventChangeEmail,
+	teamInviteEmail,
+	userLocale,
+	verificationEmail
+} from './email';
 
 describe('email templates', () => {
 	it('embeds the action url in html and text', () => {
@@ -30,5 +37,28 @@ describe('userLocale', () => {
 	it('falls back when the stored locale is missing or invalid', () => {
 		expect(userLocale({})).toBe('en');
 		expect(userLocale({ locale: 'xx' })).toBe('en');
+	});
+});
+
+describe('sharing emails', () => {
+	it('teamInviteEmail includes inviter, team and url', () => {
+		const content = teamInviteEmail('Alice', 'Design', 'https://x/app/notifications', 'en');
+		expect(content.subject).toContain('Alice');
+		expect(content.subject).toContain('Design');
+		expect(content.text).toContain('https://x/app/notifications');
+	});
+
+	it('calendarSharedEmail includes sharer and url', () => {
+		const content = calendarSharedEmail('Alice', 'https://x/app/notifications', 'en');
+		expect(content.subject).toContain('Alice');
+		expect(content.text).toContain('https://x/app/notifications');
+	});
+
+	it('eventChangeEmail localizes subject per kind', () => {
+		const created = eventChangeEmail('Alice', 'Vacation', 'created', 'https://x/app/calendar', 'en');
+		const updated = eventChangeEmail('Alice', 'Vacation', 'updated', 'https://x/app/calendar', 'en');
+		expect(created.subject).toContain('created');
+		expect(updated.subject).toContain('updated');
+		expect(created.text).toContain('Vacation');
 	});
 });

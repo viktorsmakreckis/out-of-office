@@ -70,6 +70,51 @@ export function changeEmailConfirmationEmail(
 	);
 }
 
+export function teamInviteEmail(
+	inviterName: string,
+	teamName: string,
+	url: string,
+	locale: Locale
+): EmailContent {
+	const o = { locale };
+	return actionEmail(
+		m.email_team_invite_subject({ name: inviterName, team: teamName }, o),
+		m.email_team_invite_body({}, o),
+		m.email_team_invite_cta({}, o),
+		url
+	);
+}
+
+export function calendarSharedEmail(sharerName: string, url: string, locale: Locale): EmailContent {
+	const o = { locale };
+	return actionEmail(
+		m.email_calendar_shared_subject({ name: sharerName }, o),
+		m.email_calendar_shared_body({}, o),
+		m.email_calendar_shared_cta({}, o),
+		url
+	);
+}
+
+export function eventChangeEmail(
+	actorName: string,
+	eventLabel: string,
+	kind: 'created' | 'updated',
+	url: string,
+	locale: Locale
+): EmailContent {
+	const o = { locale };
+	const subject =
+		kind === 'created'
+			? m.email_event_created_subject({ name: actorName }, o)
+			: m.email_event_updated_subject({ name: actorName }, o);
+	return actionEmail(
+		subject,
+		m.email_event_change_body({ name: actorName, title: eventLabel }, o),
+		m.email_event_change_cta({}, o),
+		url
+	);
+}
+
 export async function sendEmail(to: string, content: EmailContent): Promise<void> {
 	if (!env.RESEND_API_KEY) {
 		// Dev mode is read via $env/dynamic/private (not $app/environment) so the better-auth
