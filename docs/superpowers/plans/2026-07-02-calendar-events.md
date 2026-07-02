@@ -26,11 +26,13 @@
 ### Task 1: Paraglide messages for calendar events
 
 **Files:**
+
 - Modify: `messages/en.json`
 - Modify: `messages/fr.json`
 - Modify: `messages/pl.json`
 
 **Interfaces:**
+
 - Produces: message functions `m.nav_calendar()`, `m.calendar_event_*()`, `m.validation_event_*()` used by every later task.
 
 - [ ] **Step 1: Add English messages**
@@ -167,6 +169,7 @@ git commit -m "feat(i18n): calendar event messages"
 ### Task 2: `$lib/events` domain module (TDD)
 
 **Files:**
+
 - Create: `src/lib/events/types.ts`
 - Create: `src/lib/events/labels.ts`
 - Create: `src/lib/events/mapping.ts`
@@ -174,6 +177,7 @@ git commit -m "feat(i18n): calendar event messages"
 - Test: `src/lib/events/mapping.test.ts`
 
 **Interfaces:**
+
 - Consumes: `m.calendar_event_type_*()` (Task 1); `CalendarEvent`, `EventColor` types from `$lib/components/calendar`.
 - Produces (used by Tasks 3–6):
   - `eventTypes: readonly ['vacation','sick_leave','business_trip','public_holiday','remote_work','other']`, `type EventType`
@@ -582,10 +586,12 @@ git commit -m "feat(events): domain types and instant/floating-time mapping"
 ### Task 3: `calendar_event` table and migration
 
 **Files:**
+
 - Modify: `src/lib/server/db/schema.ts`
 - Create (generated): `drizzle/0003_calendar-events.sql`
 
 **Interfaces:**
+
 - Consumes: `eventTypes` from `src/lib/events/types.ts` (relative import), `user` from `./auth.schema`.
 - Produces: `calendarEvent` table and `eventTypeEnum` used by Task 5.
 
@@ -663,10 +669,12 @@ git commit -m "feat(db): calendar_event table and event_type enum"
 ### Task 4: Zod validation schemas (TDD)
 
 **Files:**
+
 - Create: `src/lib/schemas/event.ts`
 - Test: `src/lib/schemas/event.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `eventTypes` from `$lib/events`; `m.validation_event_*()` (Task 1).
 - Produces (used by Tasks 5–6): `eventSchema`, `deleteEventSchema`, `moveEventSchema`. `eventSchema` parses `EventFormValues`-shaped input; `moveEventSchema` parses `{ id, allDay, start, end }` where `start`/`end` are serialized `CalendarDate` (`2026-07-02`) or `CalendarDateTime` (`2026-07-02T09:00:00`) strings.
 
@@ -714,9 +722,9 @@ describe('eventSchema', () => {
 	});
 
 	it('accepts "other" with a title and a non-other event without one', () => {
-		expect(eventSchema.safeParse({ ...validCreate, type: 'other', title: 'Conference' }).success).toBe(
-			true
-		);
+		expect(
+			eventSchema.safeParse({ ...validCreate, type: 'other', title: 'Conference' }).success
+		).toBe(true);
 	});
 
 	it('rejects an all-day event ending before it starts', () => {
@@ -828,17 +836,13 @@ function tryParse<T>(parse: () => T): T | null {
 	}
 }
 
-const dateSchema = z
-	.string()
-	.refine((value) => tryParse(() => parseDate(value)) !== null, {
-		error: () => m.validation_event_date_invalid()
-	});
+const dateSchema = z.string().refine((value) => tryParse(() => parseDate(value)) !== null, {
+	error: () => m.validation_event_date_invalid()
+});
 
-const timeSchema = z
-	.string()
-	.refine((value) => tryParse(() => parseTime(value)) !== null, {
-		error: () => m.validation_event_time_invalid()
-	});
+const timeSchema = z.string().refine((value) => tryParse(() => parseTime(value)) !== null, {
+	error: () => m.validation_event_time_invalid()
+});
 
 export const eventSchema = z
 	.object({
@@ -896,9 +900,7 @@ function timedEndIsAfterStart(
 	endDate: CalendarDate,
 	endTime: Time
 ): boolean {
-	return (
-		toCalendarDateTime(endDate, endTime).compare(toCalendarDateTime(startDate, startTime)) > 0
-	);
+	return toCalendarDateTime(endDate, endTime).compare(toCalendarDateTime(startDate, startTime)) > 0;
 }
 
 export const deleteEventSchema = z.object({
@@ -968,9 +970,11 @@ git commit -m "feat(events): zod schemas for create, delete, and move"
 ### Task 5: Server route — load and actions
 
 **Files:**
+
 - Create: `src/routes/app/calendar/+page.server.ts`
 
 **Interfaces:**
+
 - Consumes: `calendarEvent` table (Task 3), `eventSchema`/`deleteEventSchema`/`moveEventSchema` (Task 4), `formValuesToRange`/`changeRangeToInstants` (Task 2), `m.calendar_event_created/updated/deleted/moved()` (Task 1).
 - Produces load data for Task 6: `{ view: CalendarView; date: string; records: EventRecord[]; eventForm; deleteForm; moveForm }` (superforms ids: `'event'`, `'delete'`, `'move'`). Actions: `?/save`, `?/delete`, `?/move` — each also reads `view`/`date` from the action URL's query string for the post-redirect location.
 
@@ -1131,11 +1135,13 @@ git commit -m "feat(calendar): server load and save/delete/move actions"
 ### Task 6: Event dialog, calendar page, and nav link
 
 **Files:**
+
 - Create: `src/routes/app/calendar/event-dialog.svelte`
 - Create: `src/routes/app/calendar/+page.svelte`
 - Modify: `src/routes/app/+layout.svelte` (nav link)
 
 **Interfaces:**
+
 - Consumes: load data and actions from Task 5; `$lib/events` (Task 2); schemas (Task 4); shadcn-svelte `ui/dialog`, `ui/field`, `ui/select`, `ui/input`, `ui/switch`, `ui/button`, `ui/spinner`; `toFieldErrors` from `$lib/utils`.
 - Produces: `EventDialog` component instance methods `openCreate(values?: Partial<EventFormValues>)` and `openEdit(record: EventRecord)` (accessed via `bind:this`).
 
@@ -1270,7 +1276,9 @@ Create `src/routes/app/calendar/event-dialog.svelte`:
 				</Field.Field>
 				<Field.Field data-invalid={!!$errors.title || undefined}>
 					<Field.Label for="event-title">
-						{$form.type === 'other' ? m.calendar_event_title_label() : m.calendar_event_note_label()}
+						{$form.type === 'other'
+							? m.calendar_event_title_label()
+							: m.calendar_event_note_label()}
 					</Field.Label>
 					<Input
 						id="event-title"
@@ -1378,6 +1386,7 @@ Create `src/routes/app/calendar/event-dialog.svelte`:
 ```
 
 Design notes baked into the markup:
+
 - The delete form is a **sibling** of the save form (nested forms are invalid HTML); the delete button reaches it via `form="event-delete-form"`.
 - Delete is two-step: first click flips `confirmingDelete`, second click submits. Reopening the dialog resets it.
 - `startTime`/`endTime` inputs are unmounted when all-day, so they are absent from the POST and the schema defaults fill them.
@@ -1509,6 +1518,7 @@ Create `src/routes/app/calendar/+page.svelte`:
 ```
 
 Notes:
+
 - `data.user` comes from the `/app` layout load and includes `timezone`.
 - A successful `move` redirects with flash; the page reloads its data, so the drag preview is replaced by the persisted event. A failed move leaves `events` untouched and the calendar reverts the preview.
 
@@ -1547,9 +1557,11 @@ git commit -m "feat(calendar): event CRUD page with create/edit dialog"
 ### Task 7: Migration + end-to-end verification
 
 **Files:**
+
 - No new files; runs the app against the dev database.
 
 **Interfaces:**
+
 - Consumes: everything above.
 
 - [ ] **Step 1: Apply the migration**
