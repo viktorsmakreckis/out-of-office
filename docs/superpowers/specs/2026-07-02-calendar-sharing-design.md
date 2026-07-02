@@ -47,16 +47,16 @@ notifications, and calendar filtering.
 
 One table covers user→user, user→team, team→user, team→team:
 
-| column         | notes                                                                 |
-| -------------- | --------------------------------------------------------------------- |
-| `id`           | uuid pk                                                                |
-| `sharerUserId` | XOR with `sharerOrgId` — whose calendar is shared                      |
-| `sharerOrgId`  | a team's calendar = union of its members' events                       |
-| `targetUserId` | XOR with `targetOrgId` XOR `targetEmail`                               |
-| `targetOrgId`  |                                                                        |
-| `targetEmail`  | pending share for an unregistered address                              |
-| `createdById`  | who performed the share                                                |
-| `createdAt`    |                                                                        |
+| column         | notes                                             |
+| -------------- | ------------------------------------------------- |
+| `id`           | uuid pk                                           |
+| `sharerUserId` | XOR with `sharerOrgId` — whose calendar is shared |
+| `sharerOrgId`  | a team's calendar = union of its members' events  |
+| `targetUserId` | XOR with `targetOrgId` XOR `targetEmail`          |
+| `targetOrgId`  |                                                   |
+| `targetEmail`  | pending share for an unregistered address         |
+| `createdById`  | who performed the share                           |
+| `createdAt`    |                                                   |
 
 Unique on (sharer, target). A better-auth `user.create` database hook converts pending
 `targetEmail` shares to `targetUserId` when that email signs up.
@@ -72,13 +72,13 @@ team instead.
 
 | column      | notes                                                                    |
 | ----------- | ------------------------------------------------------------------------ |
-| `id`        | uuid pk                                                                   |
-| `userId`    | recipient                                                                 |
-| `type`      | enum: `team_invite`, `calendar_shared`, `event_created`, `event_updated`  |
-| `actorName` | denormalized display name of who triggered it                             |
-| `data`      | jsonb: `shareId` / `invitationId` / event summary                         |
-| `readAt`    | nullable                                                                  |
-| `createdAt` |                                                                           |
+| `id`        | uuid pk                                                                  |
+| `userId`    | recipient                                                                |
+| `type`      | enum: `team_invite`, `calendar_shared`, `event_created`, `event_updated` |
+| `actorName` | denormalized display name of who triggered it                            |
+| `data`      | jsonb: `shareId` / `invitationId` / event summary                        |
+| `readAt`    | nullable                                                                 |
+| `createdAt` |                                                                          |
 
 ### Visibility rule
 
@@ -100,9 +100,9 @@ load and the notification fan-out, and is unit-tested.
   every member). Both carry the share-back action: the in-app notification renders a
   "Share your calendar back" button (form action creating the reciprocal share — recipient →
   original sharer — skipped if it already exists); the email CTA links to
-  `/app/notifications`. Share-back always shares the *recipient's personal* calendar back
+  `/app/notifications`. Share-back always shares the _recipient's personal_ calendar back
   to the sharer entity: if a team shared with you, share-back shares your calendar with that
-  team. Sharing a *team* calendar back is done manually from the team page (owner/admin).
+  team. Sharing a _team_ calendar back is done manually from the team page (owner/admin).
 - **Team invitations** use the plugin's `sendInvitationEmail` hook: email via the existing
   `email.ts` pattern (CTA → notifications page) plus a `team_invite` notification for
   registered invitees. The notifications page lists pending invitations with Accept/Decline

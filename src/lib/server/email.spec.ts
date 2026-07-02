@@ -55,8 +55,20 @@ describe('sharing emails', () => {
 	});
 
 	it('eventChangeEmail localizes subject per kind', () => {
-		const created = eventChangeEmail('Alice', 'Vacation', 'created', 'https://x/app/calendar', 'en');
-		const updated = eventChangeEmail('Alice', 'Vacation', 'updated', 'https://x/app/calendar', 'en');
+		const created = eventChangeEmail(
+			'Alice',
+			'Vacation',
+			'created',
+			'https://x/app/calendar',
+			'en'
+		);
+		const updated = eventChangeEmail(
+			'Alice',
+			'Vacation',
+			'updated',
+			'https://x/app/calendar',
+			'en'
+		);
 		expect(created.subject).toContain('created');
 		expect(updated.subject).toContain('updated');
 		expect(created.text).toContain('Vacation');

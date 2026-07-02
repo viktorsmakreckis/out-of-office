@@ -11,9 +11,7 @@ export type ShareRow = {
 	targetOrgId: string | null;
 };
 export type ShareEntity =
-	| { type: 'user'; id: string }
-	| { type: 'org'; id: string }
-	| { type: 'email'; email: string };
+	{ type: 'user'; id: string } | { type: 'org'; id: string } | { type: 'email'; email: string };
 
 function membersByOrg(memberships: MembershipRow[]): Map<string, string[]> {
 	const map = new Map<string, string[]>();
@@ -164,7 +162,10 @@ export async function getEventAudience(ownerId: string): Promise<Recipient[]> {
 	const ownerOrgIds = await orgIdsOfUser(ownerId);
 	const sharerFilters = [eq(calendarShare.sharerUserId, ownerId)];
 	if (ownerOrgIds.length > 0) sharerFilters.push(inArray(calendarShare.sharerOrgId, ownerOrgIds));
-	const shares = await db.select(shareColumns).from(calendarShare).where(or(...sharerFilters));
+	const shares = await db
+		.select(shareColumns)
+		.from(calendarShare)
+		.where(or(...sharerFilters));
 	const targetOrgIds = shares.flatMap((s) => (s.targetOrgId ? [s.targetOrgId] : []));
 	const memberships = await membershipsOfOrgs([...new Set([...ownerOrgIds, ...targetOrgIds])]);
 	const hides =

@@ -30,11 +30,13 @@
 ### Task 1: Organization plugin + regenerated auth schema + migration
 
 **Files:**
+
 - Modify: `src/lib/server/auth.ts`
 - Regenerate: `src/lib/server/db/auth.schema.ts` (via `pnpm auth:schema`)
 - Create: `drizzle/0004_teams.sql` (via `pnpm db:generate`)
 
 **Interfaces:**
+
 - Produces: `organization`, `member`, `invitation` Drizzle tables exported from `src/lib/server/db/auth.schema.ts` (re-exported by `schema.ts`). `member` has `{ id, organizationId, userId, role, createdAt }`; `invitation` has `{ id, organizationId, email, role, status, expiresAt, inviterId }`.
 - Produces: `auth.api.createOrganization / createInvitation / acceptInvitation / rejectInvitation / removeMember / updateMemberRole / updateOrganization / deleteOrganization / leaveOrganization` server methods used by later tasks.
 - The `sendInvitationEmail` hook body is a placeholder logging call in this task; Task 7 replaces it (email builders don't exist yet).
@@ -50,15 +52,15 @@ import { organization } from 'better-auth/plugins';
 In the `plugins` array:
 
 ```ts
-	plugins: [
-		organization({
-			sendInvitationEmail: async (data) => {
-				// Replaced in a later task once invite emails + notifications exist.
-				console.info(`[team-invite] to=${data.email} team=${data.organization.name}`);
-			}
-		}),
-		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
-	]
+plugins: [
+	organization({
+		sendInvitationEmail: async (data) => {
+			// Replaced in a later task once invite emails + notifications exist.
+			console.info(`[team-invite] to=${data.email} team=${data.organization.name}`);
+		}
+	}),
+	sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
+];
 ```
 
 - [ ] **Step 2: Regenerate the auth schema**
@@ -88,10 +90,12 @@ git commit -m "feat(teams): add better-auth organization plugin and schema"
 ### Task 2: Sharing and notification tables
 
 **Files:**
+
 - Modify: `src/lib/server/db/schema.ts`
 - Create: next `drizzle/000N_*.sql` (via `pnpm db:generate`)
 
 **Interfaces:**
+
 - Produces: `calendarShare`, `calendarShareHide`, `notification` tables and `NotificationData` type, imported by later tasks from `$lib/server/db/schema`.
 - `calendarShare`: exactly one of `sharerUserId`/`sharerOrgId` set; exactly one of `targetUserId`/`targetOrgId`/`targetEmail` set (DB CHECK constraints). Unique across the 5 columns with `NULLS NOT DISTINCT`.
 - `notification.data` is typed jsonb `NotificationData = { shareId?: string; invitationId?: string; teamName?: string; eventTitle?: string | null; eventType?: string }`.
@@ -238,9 +242,11 @@ git commit -m "feat(sharing): calendar_share, calendar_share_hide, notification 
 ### Task 3: i18n messages for the whole feature
 
 **Files:**
+
 - Modify: `messages/en.json`, `messages/pl.json`, `messages/fr.json`
 
 **Interfaces:**
+
 - Produces: every `m.*` key used by Tasks 4–15. Later tasks reference these exact key names.
 
 - [ ] **Step 1: Append to `messages/en.json`** (inside the top-level object; keep JSON valid)
@@ -593,10 +599,12 @@ git commit -m "feat(sharing): i18n messages for teams, sharing, notifications"
 ### Task 4: Email builders
 
 **Files:**
+
 - Modify: `src/lib/server/email.ts`
 - Test: `src/lib/server/email.spec.ts` (append to existing suite)
 
 **Interfaces:**
+
 - Consumes: existing `actionEmail`, `EmailContent`, `Locale` in `email.ts`.
 - Produces:
   - `teamInviteEmail(inviterName: string, teamName: string, url: string, locale: Locale): EmailContent`
@@ -621,8 +629,20 @@ describe('sharing emails', () => {
 	});
 
 	it('eventChangeEmail localizes subject per kind', () => {
-		const created = eventChangeEmail('Alice', 'Vacation', 'created', 'https://x/app/calendar', 'en');
-		const updated = eventChangeEmail('Alice', 'Vacation', 'updated', 'https://x/app/calendar', 'en');
+		const created = eventChangeEmail(
+			'Alice',
+			'Vacation',
+			'created',
+			'https://x/app/calendar',
+			'en'
+		);
+		const updated = eventChangeEmail(
+			'Alice',
+			'Vacation',
+			'updated',
+			'https://x/app/calendar',
+			'en'
+		);
 		expect(created.subject).toContain('created');
 		expect(updated.subject).toContain('updated');
 		expect(created.text).toContain('Vacation');
@@ -701,10 +721,12 @@ git commit -m "feat(sharing): invite, share, and event-change email builders"
 ### Task 5: Sharing logic — pure resolution + DB helpers
 
 **Files:**
+
 - Create: `src/lib/server/sharing.ts`
 - Test: `src/lib/server/sharing.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `calendarShare`, `calendarShareHide`, `member`, `organization`, `user` tables; `db`.
 - Produces (used by Tasks 7, 13–15):
 
@@ -718,9 +740,7 @@ export type ShareRow = {
 	targetOrgId: string | null;
 };
 export type ShareEntity =
-	| { type: 'user'; id: string }
-	| { type: 'org'; id: string }
-	| { type: 'email'; email: string };
+	{ type: 'user'; id: string } | { type: 'org'; id: string } | { type: 'email'; email: string };
 
 export function resolveVisibleOwners(
 	viewerId: string,
@@ -878,9 +898,7 @@ export type ShareRow = {
 	targetOrgId: string | null;
 };
 export type ShareEntity =
-	| { type: 'user'; id: string }
-	| { type: 'org'; id: string }
-	| { type: 'email'; email: string };
+	{ type: 'user'; id: string } | { type: 'org'; id: string } | { type: 'email'; email: string };
 
 function membersByOrg(memberships: MembershipRow[]): Map<string, string[]> {
 	const map = new Map<string, string[]>();
@@ -1031,7 +1049,10 @@ export async function getEventAudience(ownerId: string): Promise<Recipient[]> {
 	const ownerOrgIds = await orgIdsOfUser(ownerId);
 	const sharerFilters = [eq(calendarShare.sharerUserId, ownerId)];
 	if (ownerOrgIds.length > 0) sharerFilters.push(inArray(calendarShare.sharerOrgId, ownerOrgIds));
-	const shares = await db.select(shareColumns).from(calendarShare).where(or(...sharerFilters));
+	const shares = await db
+		.select(shareColumns)
+		.from(calendarShare)
+		.where(or(...sharerFilters));
 	const targetOrgIds = shares.flatMap((s) => (s.targetOrgId ? [s.targetOrgId] : []));
 	const memberships = await membershipsOfOrgs([...new Set([...ownerOrgIds, ...targetOrgIds])]);
 	const hides =
@@ -1094,9 +1115,11 @@ git commit -m "feat(sharing): visibility and audience resolution with share help
 ### Task 6: Notifications module
 
 **Files:**
+
 - Create: `src/lib/server/notifications.ts`
 
 **Interfaces:**
+
 - Consumes: `notification` table, `NotificationData`; `sendEmail`, `calendarSharedEmail`, `eventChangeEmail`, `userLocale` from email.ts; `getEventAudience`, `getUsersByIds`, `Recipient`, `ShareEntity` from sharing.ts; `member`, `organization`, `user` tables.
 - Produces (used by Tasks 8, 13–15):
 
@@ -1145,9 +1168,9 @@ async function notifyRecipients(
 	emailFor: (recipient: Recipient) => EmailContent
 ): Promise<void> {
 	if (recipients.length === 0) return;
-	await db.insert(notification).values(
-		recipients.map((recipient) => ({ userId: recipient.id, type, actorName, data }))
-	);
+	await db
+		.insert(notification)
+		.values(recipients.map((recipient) => ({ userId: recipient.id, type, actorName, data })));
 	const results = await Promise.allSettled(
 		recipients.map((recipient) => sendEmail(recipient.email, emailFor(recipient)))
 	);
@@ -1186,7 +1209,10 @@ export async function notifyShareCreated(
 ): Promise<void> {
 	if (target.type === 'email') {
 		try {
-			await sendEmail(target.email, calendarSharedEmail(sharerName, notificationsUrl(), baseLocale));
+			await sendEmail(
+				target.email,
+				calendarSharedEmail(sharerName, notificationsUrl(), baseLocale)
+			);
 		} catch (error) {
 			console.error('[notifications] email failed:', error);
 		}
@@ -1219,17 +1245,11 @@ export async function notifyEventChange(
 ): Promise<void> {
 	const recipients = await getEventAudience(actor.id);
 	const type = kind === 'created' ? 'event_created' : 'event_updated';
-	await notifyRecipients(
-		recipients,
-		type,
-		actor.name,
-		{ eventTitle, eventType },
-		(recipient) => {
-			const locale = recipientLocale(recipient);
-			const label = eventTitle ?? eventTypeLabelFor(eventType, locale);
-			return eventChangeEmail(actor.name, label, kind, `${env.ORIGIN}/app/calendar`, locale);
-		}
-	);
+	await notifyRecipients(recipients, type, actor.name, { eventTitle, eventType }, (recipient) => {
+		const locale = recipientLocale(recipient);
+		const label = eventTitle ?? eventTypeLabelFor(eventType, locale);
+		return eventChangeEmail(actor.name, label, kind, `${env.ORIGIN}/app/calendar`, locale);
+	});
 }
 
 /** Display name of a share's sharer entity ("Alice" or the team name). */
@@ -1272,9 +1292,11 @@ git commit -m "feat(sharing): notification fan-out module"
 ### Task 7: Auth hooks — invitation email + pending-share conversion
 
 **Files:**
+
 - Modify: `src/lib/server/auth.ts`
 
 **Interfaces:**
+
 - Consumes: `teamInviteEmail`, `sendEmail`, `userLocale` (email.ts); `notification`, `calendarShare`, `user` tables; `sharerDisplayName` (notifications.ts).
 - Produces: working team-invite emails + in-app `team_invite` notifications; pending email shares convert to user shares on signup with a `calendar_shared` notification.
 
@@ -1314,7 +1336,7 @@ organization({
 			});
 		}
 	}
-})
+});
 ```
 
 - [ ] **Step 2: Add the `databaseHooks` block to the `betterAuth({...})` options** (top level, alongside `plugins`)
@@ -1369,10 +1391,12 @@ git commit -m "feat(teams): invitation emails, invite notifications, pending-sha
 ### Task 8: Form schemas
 
 **Files:**
+
 - Create: `src/lib/schemas/team.ts`, `src/lib/schemas/share.ts`
 - Test: `src/lib/schemas/team.spec.ts`, `src/lib/schemas/share.spec.ts`
 
 **Interfaces:**
+
 - Produces (consumed by Tasks 10–15):
 
 ```ts
@@ -1438,9 +1462,9 @@ describe('shareTargetSchema', () => {
 		expect(
 			shareTargetSchema.safeParse({ targetType: 'team', email: '', teamId: 't1' }).success
 		).toBe(true);
-		expect(
-			shareTargetSchema.safeParse({ targetType: 'team', email: '', teamId: '' }).success
-		).toBe(false);
+		expect(shareTargetSchema.safeParse({ targetType: 'team', email: '', teamId: '' }).success).toBe(
+			false
+		);
 	});
 });
 ```
@@ -1543,10 +1567,12 @@ git commit -m "feat(sharing): team and share form schemas"
 ### Task 9: App layout — nav links + notification bell
 
 **Files:**
+
 - Modify: `src/routes/app/+layout.server.ts`
 - Modify: `src/routes/app/+layout.svelte`
 
 **Interfaces:**
+
 - Consumes: `notification` table.
 - Produces: layout data gains `unreadCount: number`; header gains Teams/Sharing nav links and a bell linking to `/app/notifications`.
 
@@ -1634,10 +1660,12 @@ git commit -m "feat(sharing): nav links and notification bell in app header"
 ### Task 10: Teams list page
 
 **Files:**
+
 - Create: `src/routes/app/teams/+page.server.ts`
 - Create: `src/routes/app/teams/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `createTeamSchema`; `auth.api.createOrganization`; `member`, `organization` tables.
 - Produces: `/app/teams` listing the user's teams with role badges + create form.
 
@@ -1814,10 +1842,12 @@ git commit -m "feat(teams): teams list page with create form"
 ### Task 11: Team detail page
 
 **Files:**
+
 - Create: `src/routes/app/teams/[id]/+page.server.ts`
 - Create: `src/routes/app/teams/[id]/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: team/share schemas; `auth.api.createInvitation / removeMember / updateMemberRole / updateOrganization / deleteOrganization / leaveOrganization`; `createShare`, `getUsersByIds` (sharing.ts); `notifyShareCreated` (notifications.ts); `member`, `organization`, `invitation`, `calendarShare`, `user` tables.
 - Produces: `/app/teams/[id]` — members, roles, invite, remove, transfer, rename, delete, leave, team-calendar sharing card.
 
@@ -1904,7 +1934,13 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!team) error(404);
 	const [members, pendingInvitations, teamShares, myTeams] = await Promise.all([
 		db
-			.select({ id: member.id, userId: member.userId, role: member.role, name: user.name, email: user.email })
+			.select({
+				id: member.id,
+				userId: member.userId,
+				role: member.role,
+				name: user.name,
+				email: user.email
+			})
 			.from(member)
 			.innerJoin(user, eq(member.userId, user.id))
 			.where(eq(member.organizationId, params.id))
@@ -1977,7 +2013,12 @@ export const actions: Actions = {
 		} catch {
 			return fail(400, { form });
 		}
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.team_invite_sent() }, event);
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.team_invite_sent() },
+			event
+		);
 	},
 
 	removeMember: async (event) => {
@@ -1993,7 +2034,12 @@ export const actions: Actions = {
 		} catch {
 			return fail(400, { form });
 		}
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.team_member_removed() }, event);
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.team_member_removed() },
+			event
+		);
 	},
 
 	updateRole: async (event) => {
@@ -2013,7 +2059,12 @@ export const actions: Actions = {
 		} catch {
 			return fail(400, { form });
 		}
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.team_role_updated() }, event);
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.team_role_updated() },
+			event
+		);
 	},
 
 	transferOwnership: async (event) => {
@@ -2034,7 +2085,12 @@ export const actions: Actions = {
 		} catch {
 			return fail(400, { form });
 		}
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.team_transferred() }, event);
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.team_transferred() },
+			event
+		);
 	},
 
 	rename: async (event) => {
@@ -2109,10 +2165,20 @@ export const actions: Actions = {
 			.where(eq(organization.id, event.params.id));
 		const created = await createShare({ type: 'org', id: event.params.id }, target, currentUser.id);
 		if (created === 'duplicate') {
-			redirect(303, teamPath(event.params.id), { type: 'error', message: m.share_duplicate() }, event);
+			redirect(
+				303,
+				teamPath(event.params.id),
+				{ type: 'error', message: m.share_duplicate() },
+				event
+			);
 		}
 		await notifyShareCreated(created.id, team?.name ?? '', target);
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.share_created() }, event);
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.share_created() },
+			event
+		);
 	},
 
 	revokeShare: async (event) => {
@@ -2122,10 +2188,17 @@ export const actions: Actions = {
 		requireManager(await requireMembership(currentUser.id, event.params.id));
 		const deleted = await db
 			.delete(calendarShare)
-			.where(and(eq(calendarShare.id, form.data.id), eq(calendarShare.sharerOrgId, event.params.id)))
+			.where(
+				and(eq(calendarShare.id, form.data.id), eq(calendarShare.sharerOrgId, event.params.id))
+			)
 			.returning({ id: calendarShare.id });
 		if (deleted.length === 0) error(404);
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.share_revoked() }, event);
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.share_revoked() },
+			event
+		);
 	}
 };
 ```
@@ -2171,21 +2244,36 @@ Cards top-to-bottom: Members, Invite (managers), Pending invitations (managers),
 		id: 'invite',
 		validators: zod4Client(inviteMemberSchema)
 	});
-	const { form: inviteData, errors: inviteErrors, submitting: inviteSubmitting, enhance: inviteEnhance } = invite;
+	const {
+		form: inviteData,
+		errors: inviteErrors,
+		submitting: inviteSubmitting,
+		enhance: inviteEnhance
+	} = invite;
 
 	// svelte-ignore state_referenced_locally
 	const rename = superForm(data.renameForm, {
 		id: 'rename',
 		validators: zod4Client(renameTeamSchema)
 	});
-	const { form: renameData, errors: renameErrors, submitting: renameSubmitting, enhance: renameEnhance } = rename;
+	const {
+		form: renameData,
+		errors: renameErrors,
+		submitting: renameSubmitting,
+		enhance: renameEnhance
+	} = rename;
 
 	// svelte-ignore state_referenced_locally
 	const share = superForm(data.shareForm, {
 		id: 'share',
 		validators: zod4Client(shareTargetSchema)
 	});
-	const { form: shareData, errors: shareErrors, submitting: shareSubmitting, enhance: shareEnhance } = share;
+	const {
+		form: shareData,
+		errors: shareErrors,
+		submitting: shareSubmitting,
+		enhance: shareEnhance
+	} = share;
 
 	const selectedTeamName = $derived(
 		data.shareableTeams.find((team) => team.id === $shareData.teamId)?.name ?? ''
@@ -2233,7 +2321,8 @@ Cards top-to-bottom: Members, Invite (managers), Pending invitations (managers),
 								<AlertDialog.Root>
 									<AlertDialog.Trigger>
 										{#snippet child({ props })}
-											<Button {...props} variant="outline" size="sm">{m.team_transfer_cta()}</Button>
+											<Button {...props} variant="outline" size="sm">{m.team_transfer_cta()}</Button
+											>
 										{/snippet}
 									</AlertDialog.Trigger>
 									<AlertDialog.Content>
@@ -2331,7 +2420,11 @@ Cards top-to-bottom: Members, Invite (managers), Pending invitations (managers),
 					<Field.Group>
 						<Field.Field>
 							<Field.Label>{m.share_target_label()}</Field.Label>
-							<RadioGroup.Root bind:value={$shareData.targetType} name="targetType" class="flex gap-4">
+							<RadioGroup.Root
+								bind:value={$shareData.targetType}
+								name="targetType"
+								class="flex gap-4"
+							>
 								<Field.Label class="flex items-center gap-2 font-normal">
 									<RadioGroup.Item value="person" />
 									{m.share_target_person()}
@@ -2346,7 +2439,9 @@ Cards top-to-bottom: Members, Invite (managers), Pending invitations (managers),
 							<Field.Field data-invalid={!!$shareErrors.teamId || undefined}>
 								<Field.Label for="team-share-team">{m.share_team_label()}</Field.Label>
 								<Select.Root type="single" name="teamId" bind:value={$shareData.teamId}>
-									<Select.Trigger id="team-share-team" class="w-full">{selectedTeamName}</Select.Trigger>
+									<Select.Trigger id="team-share-team" class="w-full"
+										>{selectedTeamName}</Select.Trigger
+									>
 									<Select.Content>
 										{#each data.shareableTeams as team (team.id)}
 											<Select.Item value={team.id}>{team.name}</Select.Item>
@@ -2430,7 +2525,9 @@ Cards top-to-bottom: Members, Invite (managers), Pending invitations (managers),
 					<AlertDialog.Content>
 						<AlertDialog.Header>
 							<AlertDialog.Title>{m.team_delete_confirm_title()}</AlertDialog.Title>
-							<AlertDialog.Description>{m.team_delete_confirm_description()}</AlertDialog.Description>
+							<AlertDialog.Description
+								>{m.team_delete_confirm_description()}</AlertDialog.Description
+							>
 						</AlertDialog.Header>
 						<AlertDialog.Footer>
 							<AlertDialog.Cancel>{m.cancel()}</AlertDialog.Cancel>
@@ -2452,7 +2549,8 @@ Cards top-to-bottom: Members, Invite (managers), Pending invitations (managers),
 					<AlertDialog.Content>
 						<AlertDialog.Header>
 							<AlertDialog.Title>{m.team_leave_confirm_title()}</AlertDialog.Title>
-							<AlertDialog.Description>{m.team_leave_confirm_description()}</AlertDialog.Description>
+							<AlertDialog.Description>{m.team_leave_confirm_description()}</AlertDialog.Description
+							>
 						</AlertDialog.Header>
 						<AlertDialog.Footer>
 							<AlertDialog.Cancel>{m.cancel()}</AlertDialog.Cancel>
@@ -2469,6 +2567,7 @@ Cards top-to-bottom: Members, Invite (managers), Pending invitations (managers),
 ```
 
 Implementation notes for this step:
+
 - The role-change `Select` inside a form needs the form id wiring shown (`id="role-form-{teamMember.id}"` on the form and a hidden `role` input) — add both; the snippet above shows the intent, make the ids consistent.
 - The owner cannot be role-changed or removed; the current user manages themselves only via Leave.
 - Verify `Item`/`RadioGroup` sub-component names against `src/lib/components/ui/*/index.ts` before use.
@@ -2490,10 +2589,12 @@ git commit -m "feat(teams): team detail page with members, roles, invites, and t
 ### Task 12: Personal sharing page
 
 **Files:**
+
 - Create: `src/routes/app/sharing/+page.server.ts`
 - Create: `src/routes/app/sharing/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `shareTargetSchema`, `shareIdSchema`; `createShare`, `ShareEntity` (sharing.ts); `notifyShareCreated` (notifications.ts); `calendarShare`, `calendarShareHide`, `member`, `organization`, `user` tables.
 - Produces: `/app/sharing` — share personal calendar with a person/team; "Shared by you" (revoke); "Shared with you" (hide/unhide).
 
@@ -2638,11 +2739,7 @@ export const actions: Actions = {
 				? { type: 'user', id: existing.id }
 				: { type: 'email', email: form.data.email };
 		}
-		const created = await createShare(
-			{ type: 'user', id: currentUser.id },
-			target,
-			currentUser.id
-		);
+		const created = await createShare({ type: 'user', id: currentUser.id }, target, currentUser.id);
 		if (created === 'duplicate') {
 			redirect(303, '/app/sharing', { type: 'error', message: m.share_duplicate() }, event);
 		}
@@ -2861,10 +2958,12 @@ git commit -m "feat(sharing): personal sharing page with revoke and hide"
 ### Task 13: Notifications page
 
 **Files:**
+
 - Create: `src/routes/app/notifications/+page.server.ts`
 - Create: `src/routes/app/notifications/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `shareBackSchema`, `invitationActionSchema`; `auth.api.acceptInvitation / rejectInvitation`; `createShare` (sharing.ts); `notifyShareCreated` (notifications.ts); `notification`, `calendarShare`, `invitation`, `organization` tables.
 - Produces: `/app/notifications` — list with per-type text, Accept/Decline for invites, Share-back for shares, mark-all-read.
 
@@ -2953,11 +3052,7 @@ export const actions: Actions = {
 		const target: ShareEntity = originalShare.sharerUserId
 			? { type: 'user', id: originalShare.sharerUserId }
 			: { type: 'org', id: originalShare.sharerOrgId! };
-		const created = await createShare(
-			{ type: 'user', id: currentUser.id },
-			target,
-			currentUser.id
-		);
+		const created = await createShare({ type: 'user', id: currentUser.id }, target, currentUser.id);
 		if (created !== 'duplicate') {
 			await notifyShareCreated(created.id, currentUser.name, target);
 		}
@@ -3123,10 +3218,12 @@ git commit -m "feat(sharing): notifications page with invite and share-back acti
 ### Task 14: Calendar integration — visibility, filter, read-only events, fan-out
 
 **Files:**
+
 - Modify: `src/routes/app/calendar/+page.server.ts`
 - Modify: `src/routes/app/calendar/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `getVisibleOwners` (sharing.ts); `notifyEventChange` (notifications.ts); existing event forms/schemas (unchanged).
 - Produces: calendar shows the visibility union; `filter` query param (`all` | `mine` | `teams` | `shared`); others' events read-only with owner name in the chip; create/update/move dispatch notifications.
 
@@ -3229,7 +3326,12 @@ await notifyEventChange(
 And to the `move` action before its redirect — have the move update `.returning()` also select `type` and `title`, then:
 
 ```ts
-await notifyEventChange({ id: user.id, name: user.name }, 'updated', updated[0].title, updated[0].type);
+await notifyEventChange(
+	{ id: user.id, name: user.name },
+	'updated',
+	updated[0].title,
+	updated[0].type
+);
 ```
 
 `locals.user.name` exists on the better-auth session user. The `delete` action stays notification-free (spec covers create/modify only).
@@ -3312,11 +3414,12 @@ Run through `svelte-autofixer` until clean.
 - [ ] **Step 3: Verify in the browser (two users, real dev Postgres)**
 
 `pnpm check && pnpm lint && pnpm test`, then:
+
 1. User A and B share a team → A sees B's events (name-prefixed, not draggable, click does nothing), B sees A's.
 2. Filter toggles: Mine hides B's events; Teams shows only B's; Shared shows only share-sourced calendars; All shows everything.
 3. A creates an event → B gets an in-app notification (bell badge) + logged email; A drags an event → same as "updated".
 4. B hides A's direct share → A's events disappear for B (team-sourced events stay).
-Remember (memory note): reload the preview frame after edits, and verify against dev Postgres rather than in-page fetch spies. The `pendingMove` identity check relies on `$state.raw` — don't touch it.
+   Remember (memory note): reload the preview frame after edits, and verify against dev Postgres rather than in-page fetch spies. The `pendingMove` identity check relies on `$state.raw` — don't touch it.
 
 - [ ] **Step 4: Commit**
 
