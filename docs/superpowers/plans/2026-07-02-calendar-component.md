@@ -19,7 +19,7 @@
 - Svelte 5 runes syntax only (`$props`, `$state`, `$derived`, `$effect`, snippets). No legacy `export let` / `on:` directives.
 - Formatting: repo Prettier config (tabs, single quotes). Run `pnpm format` before every commit.
 - Imports of local TS modules use the `.js` extension (`./core/types.js`), matching repo convention (`$lib/utils.js`).
-- All user-visible strings in components come from Paraglide (`import { m } from '$lib/paraglide/messages.js'`). Demo-page *sample event titles and toast text* are intentionally plain English (fake data, not UI chrome).
+- All user-visible strings in components come from Paraglide (`import { m } from '$lib/paraglide/messages.js'`). Demo-page _sample event titles and toast text_ are intentionally plain English (fake data, not UI chrome).
 - After writing or editing any `.svelte` file, run the `mcp__svelte__svelte-autofixer` MCP tool on its contents and apply fixes until it reports no issues (CLAUDE.md requirement). Exception: drag-surface `onpointerdown` handlers on non-interactive elements are pointer-only progressive enhancement (keyboard equivalents exist via click callbacks); if flagged, silence with `<!-- svelte-ignore a11y_no_static_element_interactions -->` rather than restructuring.
 - Commit messages: conventional commits (`feat:`, `test:`, `docs:`). **Never add a `Co-Authored-By` trailer.**
 - Test commands: `pnpm test:unit --run <file>` for one file, `pnpm test` for the whole suite. Type checks: `pnpm check`. Lint: `pnpm lint`.
@@ -29,11 +29,13 @@
 ### Task 1: Paraglide messages
 
 **Files:**
+
 - Modify: `messages/en.json`
 - Modify: `messages/pl.json`
 - Modify: `messages/fr.json`
 
 **Interfaces:**
+
 - Produces: message functions `m.nav_calendar()`, `m.calendar_today()`, `m.calendar_view_month()`, `m.calendar_view_week()`, `m.calendar_view_agenda()`, `m.calendar_all_day()`, `m.calendar_more({ count: number })`, `m.calendar_previous()`, `m.calendar_next()`, `m.calendar_empty_title()`, `m.calendar_empty_description()` — used by every component task.
 
 - [ ] **Step 1: Add messages to `messages/en.json`**
@@ -105,10 +107,12 @@ git commit -m "feat(i18n): add calendar messages"
 ### Task 2: `core/types.ts` — event model and date helpers
 
 **Files:**
+
 - Create: `src/lib/components/calendar/core/types.ts`
 - Test: `src/lib/components/calendar/core/types.test.ts`
 
 **Interfaces:**
+
 - Consumes: `CalendarDate`, `CalendarDateTime`, `toCalendarDate` from `@internationalized/date`.
 - Produces (used by every later task):
   - `EVENT_COLORS: readonly ['blue','green','amber','red','violet','rose','gray']`, `type EventColor`
@@ -153,7 +157,8 @@ function timed(id: string, start: CalendarDateTime, end: CalendarDateTime): Time
 }
 
 const d = (day: number) => new CalendarDate(2026, 7, day);
-const t = (day: number, hour: number, minute = 0) => new CalendarDateTime(2026, 7, day, hour, minute);
+const t = (day: number, hour: number, minute = 0) =>
+	new CalendarDateTime(2026, 7, day, hour, minute);
 
 describe('isValidEvent', () => {
 	it('accepts a one-day all-day event (start equals end)', () => {
@@ -288,8 +293,7 @@ export type RangeSelection =
 	| { allDay: false; start: CalendarDateTime; end: CalendarDateTime };
 
 export type EventChange =
-	| { start: CalendarDate; end: CalendarDate }
-	| { start: CalendarDateTime; end: CalendarDateTime };
+	{ start: CalendarDate; end: CalendarDate } | { start: CalendarDateTime; end: CalendarDateTime };
 
 export function isValidEvent(event: CalendarEvent<unknown>): boolean {
 	return event.allDay ? event.start.compare(event.end) <= 0 : event.start.compare(event.end) < 0;
@@ -368,10 +372,12 @@ git commit -m "feat(calendar): add event model and date helpers"
 ### Task 3: `core/format.ts` — Intl formatting helpers
 
 **Files:**
+
 - Create: `src/lib/components/calendar/core/format.ts`
 - Test: `src/lib/components/calendar/core/format.test.ts`
 
 **Interfaces:**
+
 - Consumes: `CalendarDate`, `CalendarDateTime` from `@internationalized/date`.
 - Produces:
   - `formatMonthLabel(date: CalendarDate, locale: string): string` — "July 2026"
@@ -413,7 +419,11 @@ describe('formatMonthLabel', () => {
 
 describe('formatWeekLabel', () => {
 	it('includes both endpoints and the year', () => {
-		const label = formatWeekLabel(new CalendarDate(2026, 6, 29), new CalendarDate(2026, 7, 5), 'en');
+		const label = formatWeekLabel(
+			new CalendarDate(2026, 6, 29),
+			new CalendarDate(2026, 7, 5),
+			'en'
+		);
 		expect(label).toContain('29');
 		expect(label).toContain('5');
 		expect(label).toContain('2026');
@@ -553,10 +563,12 @@ git commit -m "feat(calendar): add Intl formatting helpers"
 ### Task 4: `core/month-grid.ts` — grid generation
 
 **Files:**
+
 - Create: `src/lib/components/calendar/core/month-grid.ts`
 - Test: `src/lib/components/calendar/core/month-grid.test.ts`
 
 **Interfaces:**
+
 - Consumes: `startOfMonth`, `startOfWeek` from `@internationalized/date`.
 - Produces:
   - `const WEEKS_IN_GRID = 6`, `const DAYS_IN_WEEK = 7`
@@ -666,10 +678,12 @@ git commit -m "feat(calendar): add month grid generation"
 ### Task 5: `core/lanes.ts` — multi-day chip lane packing
 
 **Files:**
+
 - Create: `src/lib/components/calendar/core/lanes.ts`
 - Test: `src/lib/components/calendar/core/lanes.test.ts`
 
 **Interfaces:**
+
 - Consumes: `compareEvents`, `daysBetween`, `eventDateSpan`, `CalendarEvent` from `./types.js`.
 - Produces:
   - `type LaneSegment<T = unknown> = { event: CalendarEvent<T>; lane: number; startCol: number; span: number; continuesLeft: boolean; continuesRight: boolean }`
@@ -730,7 +744,9 @@ describe('packLanes', () => {
 	});
 
 	it('excludes events outside the row', () => {
-		expect(packLanes([allDay('before', 1, 5), allDay('after', 13, 20)], rowStart, 7)).toHaveLength(1);
+		expect(packLanes([allDay('before', 1, 5), allDay('after', 13, 20)], rowStart, 7)).toHaveLength(
+			1
+		);
 	});
 
 	it('includes timed events as single-column segments via their date span', () => {
@@ -848,14 +864,24 @@ export function overflowCounts(
 	return counts;
 }
 
-function isOccupied(occupancy: boolean[][], lane: number, startCol: number, endCol: number): boolean {
+function isOccupied(
+	occupancy: boolean[][],
+	lane: number,
+	startCol: number,
+	endCol: number
+): boolean {
 	const row = occupancy[lane];
 	if (!row) return false;
 	for (let col = startCol; col <= endCol; col++) if (row[col]) return true;
 	return false;
 }
 
-function markOccupied(occupancy: boolean[][], lane: number, startCol: number, endCol: number): void {
+function markOccupied(
+	occupancy: boolean[][],
+	lane: number,
+	startCol: number,
+	endCol: number
+): void {
 	const row = (occupancy[lane] ??= []);
 	for (let col = startCol; col <= endCol; col++) row[col] = true;
 }
@@ -879,10 +905,12 @@ git commit -m "feat(calendar): add lane packing for multi-day chips"
 ### Task 6: `core/columns.ts` — week-view overlap columns
 
 **Files:**
+
 - Create: `src/lib/components/calendar/core/columns.ts`
 - Test: `src/lib/components/calendar/core/columns.test.ts`
 
 **Interfaces:**
+
 - Consumes: `toCalendarDateTime` from `@internationalized/date`; `MINUTES_IN_DAY`, `TimedEvent` from `./types.js`.
 - Produces:
   - `type ColumnPlacement<T = unknown> = { event: TimedEvent<T>; startMinute: number; endMinute: number; col: number; colCount: number }` — minutes are clipped to `[0, 1440]` for the given day
@@ -974,7 +1002,11 @@ Expected: FAIL — cannot resolve `./columns`.
 Create `src/lib/components/calendar/core/columns.ts`:
 
 ```ts
-import { toCalendarDateTime, type CalendarDate, type CalendarDateTime } from '@internationalized/date';
+import {
+	toCalendarDateTime,
+	type CalendarDate,
+	type CalendarDateTime
+} from '@internationalized/date';
 import { MINUTES_IN_DAY, type TimedEvent } from './types.js';
 
 export type ColumnPlacement<T = unknown> = {
@@ -991,7 +1023,10 @@ export type ColumnPlacement<T = unknown> = {
  * transitive overlap group share colCount; columns are assigned greedily so a
  * freed column is reused by the next non-overlapping event.
  */
-export function layoutDayColumns<T>(events: TimedEvent<T>[], day: CalendarDate): ColumnPlacement<T>[] {
+export function layoutDayColumns<T>(
+	events: TimedEvent<T>[],
+	day: CalendarDate
+): ColumnPlacement<T>[] {
 	const dayStart = toCalendarDateTime(day);
 	const dayEnd = toCalendarDateTime(day.add({ days: 1 }));
 
@@ -1059,10 +1094,12 @@ git commit -m "feat(calendar): add overlap column layout for the week view"
 ### Task 7: `core/drag.ts` — drag geometry and snapping
 
 **Files:**
+
 - Create: `src/lib/components/calendar/core/drag.ts`
 - Test: `src/lib/components/calendar/core/drag.test.ts`
 
 **Interfaces:**
+
 - Consumes: `toCalendarDateTime` from `@internationalized/date`; `MINUTES_IN_DAY` from `./types.js`.
 - Produces:
   - `const SNAP_MINUTES = 15`, `const MIN_EVENT_MINUTES = 15`
@@ -1098,7 +1135,8 @@ import {
 } from './drag';
 
 const d = (day: number) => new CalendarDate(2026, 7, day);
-const t = (day: number, hour: number, minute = 0) => new CalendarDateTime(2026, 7, day, hour, minute);
+const t = (day: number, hour: number, minute = 0) =>
+	new CalendarDateTime(2026, 7, day, hour, minute);
 
 describe('snapMinute', () => {
 	it('rounds to the nearest 15 minutes', () => {
@@ -1217,7 +1255,11 @@ Expected: FAIL — cannot resolve `./drag`.
 Create `src/lib/components/calendar/core/drag.ts`:
 
 ```ts
-import { toCalendarDateTime, type CalendarDate, type CalendarDateTime } from '@internationalized/date';
+import {
+	toCalendarDateTime,
+	type CalendarDate,
+	type CalendarDateTime
+} from '@internationalized/date';
 import { MINUTES_IN_DAY } from './types.js';
 
 export const SNAP_MINUTES = 15;
@@ -1256,7 +1298,9 @@ export function dateRangeBetween(
 	anchor: CalendarDate,
 	target: CalendarDate
 ): { start: CalendarDate; end: CalendarDate } {
-	return anchor.compare(target) <= 0 ? { start: anchor, end: target } : { start: target, end: anchor };
+	return anchor.compare(target) <= 0
+		? { start: anchor, end: target }
+		: { start: target, end: anchor };
 }
 
 /** Ordered, snapped timed range on `day`; at least MIN_EVENT_MINUTES long. */
@@ -1343,9 +1387,11 @@ git commit -m "feat(calendar): add drag geometry and snapping math"
 ### Task 8: `event-chip.svelte` — default event rendering + color variants
 
 **Files:**
+
 - Create: `src/lib/components/calendar/event-chip.svelte`
 
 **Interfaces:**
+
 - Consumes: `formatTime` (Task 3), `CalendarEvent` (Task 2), `cn` from `$lib/utils.js`, `tv` from `tailwind-variants`.
 - Produces (module exports used by month/week/agenda views):
   - `chipVariants({ color, continuesLeft, continuesRight })` — horizontal chip classes (month grid + all-day lanes)
@@ -1384,10 +1430,13 @@ Create `src/lib/components/calendar/event-chip.svelte`:
 		variants: {
 			color: {
 				blue: 'border-blue-600 bg-blue-500/15 text-blue-800 hover:bg-blue-500/25 dark:text-blue-200',
-				green: 'border-emerald-600 bg-emerald-500/15 text-emerald-800 hover:bg-emerald-500/25 dark:text-emerald-200',
-				amber: 'border-amber-600 bg-amber-500/20 text-amber-800 hover:bg-amber-500/30 dark:text-amber-200',
+				green:
+					'border-emerald-600 bg-emerald-500/15 text-emerald-800 hover:bg-emerald-500/25 dark:text-emerald-200',
+				amber:
+					'border-amber-600 bg-amber-500/20 text-amber-800 hover:bg-amber-500/30 dark:text-amber-200',
 				red: 'border-red-600 bg-red-500/15 text-red-800 hover:bg-red-500/25 dark:text-red-200',
-				violet: 'border-violet-600 bg-violet-500/15 text-violet-800 hover:bg-violet-500/25 dark:text-violet-200',
+				violet:
+					'border-violet-600 bg-violet-500/15 text-violet-800 hover:bg-violet-500/25 dark:text-violet-200',
 				rose: 'border-rose-600 bg-rose-500/15 text-rose-800 hover:bg-rose-500/25 dark:text-rose-200',
 				gray: 'border-muted-foreground bg-muted-foreground/15 text-foreground hover:bg-muted-foreground/25'
 			}
@@ -1475,9 +1524,11 @@ git commit -m "feat(calendar): add event chip with color variants"
 ### Task 9: `calendar-header.svelte`
 
 **Files:**
+
 - Create: `src/lib/components/calendar/calendar-header.svelte`
 
 **Interfaces:**
+
 - Consumes: `Button` from `$lib/components/ui/button`, `ToggleGroup` from `$lib/components/ui/toggle-group`, `Tooltip` from `$lib/components/ui/tooltip`, `m` messages (Task 1), `CalendarView` (Task 2), lucide icons.
 - Produces: `CalendarHeader` component with props
   `{ view: CalendarView; label: string; onViewChange: (view: CalendarView) => void; onNavigate: (target: 'previous' | 'today' | 'next') => void; headerActions?: Snippet }`.
@@ -1593,9 +1644,11 @@ git commit -m "feat(calendar): add calendar header"
 ### Task 10: `agenda-view.svelte`
 
 **Files:**
+
 - Create: `src/lib/components/calendar/agenda-view.svelte`
 
 **Interfaces:**
+
 - Consumes: `dotVariants` (Task 8), `formatDayHeading`, `formatTimeRange` (Task 3), `eventsOnDay`, `CalendarEvent` (Task 2), `Empty` components, `m` messages, `startOfMonth`, `endOfMonth`, `isToday`, `getLocalTimeZone` from `@internationalized/date`.
 - Produces: `AgendaView` component with props
   `{ events: CalendarEvent<T>[]; focal: CalendarDate; locale: string; onEventClick?: (event: CalendarEvent<T>) => void; agendaItem?: Snippet<[CalendarEvent<T>]> }`.
@@ -1714,9 +1767,11 @@ git commit -m "feat(calendar): add agenda view"
 ### Task 11: `month-view.svelte` — rendering + drag & drop
 
 **Files:**
+
 - Create: `src/lib/components/calendar/month-view.svelte`
 
 **Interfaces:**
+
 - Consumes: `EventChip` + `chipVariants` (Task 8), `monthGrid`/`WEEKS_IN_GRID`/`DAYS_IN_WEEK` (Task 4), `packLanes`/`overflowCounts` (Task 5), drag math (Task 7), `Popover` from `$lib/components/ui/popover`, types/helpers (Task 2), `formatWeekdayName` (Task 3).
 - Produces: `MonthView` component with props
   `{ events: CalendarEvent<T>[]; focal: CalendarDate; locale: string; readonly?: boolean; onDayClick?: (date: CalendarDate) => void; onEventClick?: (event: CalendarEvent<T>) => void; onRangeSelect?: (range: RangeSelection) => void; onEventChange?: (event: CalendarEvent<T>, change: EventChange) => void; eventContent?: Snippet<[CalendarEvent<T>]> }`.
@@ -1838,7 +1893,9 @@ Create `src/lib/components/calendar/month-view.svelte`:
 	);
 
 	function inSelection(day: CalendarDate): boolean {
-		return selection !== null && selection.start.compare(day) <= 0 && selection.end.compare(day) >= 0;
+		return (
+			selection !== null && selection.start.compare(day) <= 0 && selection.end.compare(day) >= 0
+		);
 	}
 
 	function dayAtPointer(e: PointerEvent): CalendarDate | null {
@@ -2053,9 +2110,11 @@ git commit -m "feat(calendar): add month view with drag interactions"
 ### Task 12: `week-view.svelte` — all-day lane, time grid, drag & drop
 
 **Files:**
+
 - Create: `src/lib/components/calendar/week-view.svelte`
 
 **Interfaces:**
+
 - Consumes: `EventChip` + `blockVariants` (Task 8), `weekDays`/`DAYS_IN_WEEK` (Task 4), `packLanes` (Task 5), `layoutDayColumns` (Task 6), drag math (Task 7), format helpers (Task 3), types (Task 2).
 - Produces: `WeekView` component with the same props shape as `MonthView` (Task 11).
 
@@ -2083,11 +2142,7 @@ Create `src/lib/components/calendar/week-view.svelte`:
 		resizedTimed,
 		timeRangeBetween
 	} from './core/drag.js';
-	import {
-		formatHourLabel,
-		formatTimeRange,
-		formatWeekdayName
-	} from './core/format.js';
+	import { formatHourLabel, formatTimeRange, formatWeekdayName } from './core/format.js';
 	import { packLanes } from './core/lanes.js';
 	import { DAYS_IN_WEEK, weekDays } from './core/month-grid.js';
 	import {
@@ -2280,7 +2335,12 @@ Create `src/lib/components/calendar/week-view.svelte`:
 		suppressClick = false;
 		const position = gridPosition(e);
 		if (!position) return;
-		drag = { kind: 'grid-resize', event, targetDay: position.dayIndex, targetMinute: position.minute };
+		drag = {
+			kind: 'grid-resize',
+			event,
+			targetDay: position.dayIndex,
+			targetMinute: position.minute
+		};
 		dragMoved = false;
 	}
 
@@ -2413,7 +2473,7 @@ Create `src/lib/components/calendar/week-view.svelte`:
 			{/each}
 		</div>
 		<div class="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b">
-			<div class="text-muted-foreground px-2 py-1 text-[10px]">{m.calendar_all_day()}</div>
+			<div class="px-2 py-1 text-[10px] text-muted-foreground">{m.calendar_all_day()}</div>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
 				class="relative col-span-7"
@@ -2512,8 +2572,9 @@ Create `src/lib/components/calendar/week-view.svelte`:
 										style="top: {(placement.startMinute / MINUTES_IN_DAY) *
 											100}%; height: {((placement.endMinute - placement.startMinute) /
 											MINUTES_IN_DAY) *
-											100}%; left: {(placement.col / placement.colCount) *
-											100}%; width: {(1 / placement.colCount) * 100}%;"
+											100}%; left: {(placement.col / placement.colCount) * 100}%; width: {(1 /
+											placement.colCount) *
+											100}%;"
 									>
 										<button
 											type="button"
@@ -2593,10 +2654,12 @@ git commit -m "feat(calendar): add week view with drag interactions"
 ### Task 13: `calendar.svelte` root + `index.ts` public exports
 
 **Files:**
+
 - Create: `src/lib/components/calendar/calendar.svelte`
 - Create: `src/lib/components/calendar/index.ts`
 
 **Interfaces:**
+
 - Consumes: `CalendarHeader` (Task 9), `MonthView` (Task 11), `WeekView` (Task 12), `AgendaView` (Task 10), `validEvents` (Task 2), `formatMonthLabel`/`formatWeekLabel` (Task 3), `weekDays` (Task 4), `getLocale` from `$lib/paraglide/runtime`.
 - Produces (the public API):
   - `Calendar` component: props `{ events?: CalendarEvent<T>[]; view?: CalendarView (bindable, default 'month'); date?: CalendarDate (bindable, default today); locale?: string (default active Paraglide locale); readonly?: boolean; onEventClick?; onDayClick?; onRangeSelect?; onEventChange?; eventContent?; agendaItem?; headerActions? }`
@@ -2674,7 +2737,13 @@ Create `src/lib/components/calendar/calendar.svelte`:
 </script>
 
 <div class="flex flex-col gap-4" data-slot="calendar">
-	<CalendarHeader {view} {label} onViewChange={(next) => (view = next)} onNavigate={navigate} {headerActions} />
+	<CalendarHeader
+		{view}
+		{label}
+		onViewChange={(next) => (view = next)}
+		onNavigate={navigate}
+		{headerActions}
+	/>
 	{#if view === 'month'}
 		<MonthView
 			events={safeEvents}
@@ -2745,11 +2814,13 @@ git commit -m "feat(calendar): add calendar root component and public exports"
 ### Task 14: Demo page `/app/calendar` + nav link
 
 **Files:**
+
 - Create: `src/routes/app/calendar/+page.ts`
 - Create: `src/routes/app/calendar/+page.svelte`
 - Modify: `src/routes/app/+layout.svelte` (add nav link inside `NavigationMenu.List`, after the Home item)
 
 **Interfaces:**
+
 - Consumes: `Calendar`, `CalendarEvent`, `CalendarView` from `$lib/components/calendar` (Task 13), `m.nav_calendar()` (Task 1), `toast` from `svelte-sonner` (Toaster already mounted in the root layout).
 - Produces: a linkable demo page; `view`/`date` round-trip through query params.
 
@@ -2783,7 +2854,12 @@ Create `src/routes/app/calendar/+page.svelte`. Sample data covers every renderin
 
 ```svelte
 <script lang="ts">
-	import { getLocalTimeZone, startOfMonth, toCalendarDateTime, today } from '@internationalized/date';
+	import {
+		getLocalTimeZone,
+		startOfMonth,
+		toCalendarDateTime,
+		today
+	} from '@internationalized/date';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { Calendar, type CalendarEvent } from '$lib/components/calendar';
@@ -2799,21 +2875,121 @@ Create `src/routes/app/calendar/+page.svelte`. Sample data covers every renderin
 		toCalendarDateTime(day(n)).add({ hours: hour, minutes: minute });
 
 	let events = $state<CalendarEvent[]>([
-		{ id: 'leave-1', title: 'Annual leave — Viktors', allDay: true, color: 'blue', start: day(2), end: day(6) },
-		{ id: 'leave-2', title: 'Annual leave — Marta', allDay: true, color: 'violet', start: day(4), end: day(11) },
+		{
+			id: 'leave-1',
+			title: 'Annual leave — Viktors',
+			allDay: true,
+			color: 'blue',
+			start: day(2),
+			end: day(6)
+		},
+		{
+			id: 'leave-2',
+			title: 'Annual leave — Marta',
+			allDay: true,
+			color: 'violet',
+			start: day(4),
+			end: day(11)
+		},
 		{ id: 'sick-1', title: 'Sick — Tom', allDay: true, color: 'red', start: day(4), end: day(4) },
-		{ id: 'offsite', title: 'Company offsite', allDay: true, color: 'amber', start: day(16), end: day(18) },
-		{ id: 'holiday', title: 'Public holiday', allDay: true, color: 'green', editable: false, start: day(14), end: day(14) },
-		{ id: 'busy-1', title: 'Busy', allDay: true, color: 'gray', editable: false, start: day(20), end: day(21) },
-		{ id: 'apt-1', title: 'Dentist', allDay: false, color: 'rose', start: at(4, 9), end: at(4, 10) },
-		{ id: 'apt-2', title: 'School run', allDay: false, color: 'gray', start: at(4, 15), end: at(4, 15, 30) },
-		{ id: 'meet-1', title: 'Team sync', allDay: false, color: 'blue', start: at(9, 10), end: at(9, 11) },
-		{ id: 'meet-2', title: '1:1', allDay: false, color: 'green', start: at(9, 10, 30), end: at(9, 11, 30) },
-		{ id: 'meet-3', title: 'Interview', allDay: false, color: 'violet', start: at(9, 10, 45), end: at(9, 12) },
-		{ id: 'focus', title: 'Focus block', allDay: false, color: 'amber', start: at(10, 13), end: at(10, 17) },
-		{ id: 'standup', title: 'Standup', allDay: false, color: 'blue', start: at(10, 9, 15), end: at(10, 9, 30) },
-		{ id: 'half-day', title: 'Half day — Ana', allDay: false, color: 'rose', start: at(24, 13), end: at(24, 17, 30) },
-		{ id: 'on-call', title: 'On-call', allDay: false, color: 'red', start: at(26, 22), end: at(27, 6) }
+		{
+			id: 'offsite',
+			title: 'Company offsite',
+			allDay: true,
+			color: 'amber',
+			start: day(16),
+			end: day(18)
+		},
+		{
+			id: 'holiday',
+			title: 'Public holiday',
+			allDay: true,
+			color: 'green',
+			editable: false,
+			start: day(14),
+			end: day(14)
+		},
+		{
+			id: 'busy-1',
+			title: 'Busy',
+			allDay: true,
+			color: 'gray',
+			editable: false,
+			start: day(20),
+			end: day(21)
+		},
+		{
+			id: 'apt-1',
+			title: 'Dentist',
+			allDay: false,
+			color: 'rose',
+			start: at(4, 9),
+			end: at(4, 10)
+		},
+		{
+			id: 'apt-2',
+			title: 'School run',
+			allDay: false,
+			color: 'gray',
+			start: at(4, 15),
+			end: at(4, 15, 30)
+		},
+		{
+			id: 'meet-1',
+			title: 'Team sync',
+			allDay: false,
+			color: 'blue',
+			start: at(9, 10),
+			end: at(9, 11)
+		},
+		{
+			id: 'meet-2',
+			title: '1:1',
+			allDay: false,
+			color: 'green',
+			start: at(9, 10, 30),
+			end: at(9, 11, 30)
+		},
+		{
+			id: 'meet-3',
+			title: 'Interview',
+			allDay: false,
+			color: 'violet',
+			start: at(9, 10, 45),
+			end: at(9, 12)
+		},
+		{
+			id: 'focus',
+			title: 'Focus block',
+			allDay: false,
+			color: 'amber',
+			start: at(10, 13),
+			end: at(10, 17)
+		},
+		{
+			id: 'standup',
+			title: 'Standup',
+			allDay: false,
+			color: 'blue',
+			start: at(10, 9, 15),
+			end: at(10, 9, 30)
+		},
+		{
+			id: 'half-day',
+			title: 'Half day — Ana',
+			allDay: false,
+			color: 'rose',
+			start: at(24, 13),
+			end: at(24, 17, 30)
+		},
+		{
+			id: 'on-call',
+			title: 'On-call',
+			allDay: false,
+			color: 'red',
+			start: at(26, 22),
+			end: at(27, 6)
+		}
 	]);
 
 	$effect(() => {
@@ -2897,6 +3073,7 @@ Expected: all pass with 0 errors.
 - [ ] **Step 2: Visual sweep**
 
 With the dev server running, re-verify the Task 14 Step 6 checklist in **light and dark mode**, plus:
+
 - Switch app language (avatar menu) to pl and fr: header labels, weekday/month names, and week start change accordingly (en: Sunday start; pl/fr: Monday start).
 - Narrow viewport (~375px): month/week views scroll horizontally; agenda remains usable.
 
