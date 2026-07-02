@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { Pathname } from '$app/types';
 	import { resolve } from '$app/paths';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -43,7 +42,7 @@
 			{#each data.teams as team (team.id)}
 				<Item.Root variant="outline">
 					{#snippet child({ props })}
-						<a href={resolve(`/app/teams/${team.id}` as Pathname)} {...props}>
+						<a href={resolve('/app/teams/[id]', { id: team.id })} {...props}>
 							<Item.Content>
 								<Item.Title>{team.name}</Item.Title>
 							</Item.Content>
