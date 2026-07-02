@@ -1,0 +1,85 @@
+<script lang="ts" generics="T">
+	import {
+		endOfMonth,
+		getLocalTimeZone,
+		isToday,
+		startOfMonth,
+		type CalendarDate
+	} from '@internationalized/date';
+	import type { Snippet } from 'svelte';
+	import * as Empty from '$lib/components/ui/empty';
+	import { m } from '$lib/paraglide/messages.js';
+	import { cn } from '$lib/utils.js';
+	import { dotVariants } from './event-chip.svelte';
+	import { formatDayHeading, formatTimeRange } from './core/format.js';
+	import { eventsOnDay, type CalendarEvent } from './core/types.js';
+
+	let {
+		events,
+		focal,
+		locale,
+		onEventClick,
+		agendaItem
+	}: {
+		events: CalendarEvent<T>[];
+		focal: CalendarDate;
+		locale: string;
+		onEventClick?: (event: CalendarEvent<T>) => void;
+		agendaItem?: Snippet<[CalendarEvent<T>]>;
+	} = $props();
+
+	const groups = $derived.by(() => {
+		const first = startOfMonth(focal);
+		const dayCount = endOfMonth(focal).day;
+		return Array.from({ length: dayCount }, (_, i) => first.add({ days: i }))
+			.map((day) => ({ day, events: eventsOnDay(events, day) }))
+			.filter((group) => group.events.length > 0);
+	});
+</script>
+
+{#if groups.length === 0}
+	<Empty.Root class="rounded-lg border">
+		<Empty.Header>
+			<Empty.Title>{m.calendar_empty_title()}</Empty.Title>
+			<Empty.Description>{m.calendar_empty_description()}</Empty.Description>
+		</Empty.Header>
+	</Empty.Root>
+{:else}
+	<div class="flex flex-col rounded-lg border">
+		{#each groups as group (group.day.toString())}
+			<section>
+				<h3
+					class={cn(
+						'bg-background sticky top-0 z-10 border-b px-3 py-2 text-sm font-medium',
+						isToday(group.day, getLocalTimeZone()) && 'text-primary'
+					)}
+				>
+					{formatDayHeading(group.day, locale)}
+				</h3>
+				<ul class="flex flex-col gap-px p-1">
+					{#each group.events as event (event.id)}
+						<li>
+							<button
+								type="button"
+								class="hover:bg-muted focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+								onclick={() => onEventClick?.(event)}
+							>
+								{#if agendaItem}
+									{@render agendaItem(event)}
+								{:else}
+									<span class={dotVariants({ color: event.color })}></span>
+									<span class="text-muted-foreground w-36 shrink-0 truncate">
+										{event.allDay
+											? m.calendar_all_day()
+											: formatTimeRange(event.start, event.end, locale)}
+									</span>
+									<span class="truncate font-medium">{event.title}</span>
+								{/if}
+							</button>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/each}
+	</div>
+{/if}
