@@ -128,6 +128,38 @@ describe('formValuesToRange', () => {
 		expect(range.start.toISOString()).toBe('2026-03-08T06:00:00.000Z'); // 01:00 EST
 		expect(range.end.toISOString()).toBe('2026-03-08T08:00:00.000Z'); // 04:00 EDT
 	});
+
+	// Pins @internationalized/date's disambiguation so a library upgrade that
+	// changes it is caught: users can type these wall-clock times into the form.
+	it('resolves a nonexistent local time (DST gap) forward', () => {
+		// 02:30 on 2026-03-08 does not exist in America/New_York (02:00 jumps to 03:00).
+		const range = formValuesToRange(
+			{
+				allDay: false,
+				startDate: '2026-03-08',
+				endDate: '2026-03-08',
+				startTime: '02:30',
+				endTime: '05:00'
+			},
+			'America/New_York'
+		);
+		expect(range.start.toISOString()).toBe('2026-03-08T07:30:00.000Z'); // shifted to 03:30 EDT
+	});
+
+	it('resolves an ambiguous local time (DST fall-back) to the earlier occurrence', () => {
+		// 01:30 on 2026-11-01 occurs twice in America/New_York (EDT, then EST an hour later).
+		const range = formValuesToRange(
+			{
+				allDay: false,
+				startDate: '2026-11-01',
+				endDate: '2026-11-01',
+				startTime: '01:30',
+				endTime: '03:00'
+			},
+			'America/New_York'
+		);
+		expect(range.start.toISOString()).toBe('2026-11-01T05:30:00.000Z'); // 01:30 EDT
+	});
 });
 
 describe('changeRangeToInstants', () => {
