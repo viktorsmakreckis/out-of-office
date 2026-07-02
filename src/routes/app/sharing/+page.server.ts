@@ -156,6 +156,24 @@ export const actions: Actions = {
 		const form = await superValidate(event.request, zod4(shareIdSchema), { id: 'hide' });
 		if (!form.valid) return fail(400, { form });
 		const currentUser = requireUser(event.locals);
+
+		const myOrgRows = await db
+			.select({ id: organization.id })
+			.from(member)
+			.innerJoin(organization, eq(member.organizationId, organization.id))
+			.where(eq(member.userId, currentUser.id));
+		const myOrgIds = myOrgRows.map((row) => row.id);
+
+		const receivedFilters = [eq(calendarShare.targetUserId, currentUser.id)];
+		if (myOrgIds.length > 0) receivedFilters.push(inArray(calendarShare.targetOrgId, myOrgIds));
+
+		const [existing] = await db
+			.select({ id: calendarShare.id })
+			.from(calendarShare)
+			.where(and(eq(calendarShare.id, form.data.id), or(...receivedFilters)))
+			.limit(1);
+		if (!existing) error(404);
+
 		await db
 			.insert(calendarShareHide)
 			.values({ userId: currentUser.id, shareId: form.data.id })
