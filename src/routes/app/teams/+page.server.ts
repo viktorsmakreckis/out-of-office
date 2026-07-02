@@ -1,11 +1,12 @@
 import { fail, redirect as kitRedirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'sveltekit-flash-message/server';
-import { superValidate } from 'sveltekit-superforms';
+import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
 import { createTeamSchema } from '$lib/schemas/team';
 import { auth } from '$lib/server/auth';
+import { authErrorMessage } from '$lib/server/auth-error';
 import { db } from '$lib/server/db';
 import { member, organization } from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
@@ -20,8 +21,8 @@ function teamSlug(name: string): string {
 	const base = name
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/(^-|-$)/g, '')
-		.slice(0, 40);
+		.slice(0, 40)
+		.replace(/(^-|-$)/g, '');
 	return `${base || 'team'}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
@@ -49,8 +50,8 @@ export const actions: Actions = {
 				body: { name: form.data.name, slug: teamSlug(form.data.name) },
 				headers: event.request.headers
 			});
-		} catch {
-			return fail(400, { form });
+		} catch (error) {
+			return setError(form, '', authErrorMessage(error));
 		}
 		redirect(303, '/app/teams', { type: 'success', message: m.team_created() }, event);
 	}
