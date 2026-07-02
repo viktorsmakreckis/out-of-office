@@ -17,6 +17,10 @@ export const auth = betterAuth({
 	baseURL: env.ORIGIN,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
+	rateLimit: {
+		enabled: true, // default is production-only; keep it on in dev so it's testable
+		storage: 'database'
+	},
 	emailAndPassword: {
 		enabled: true,
 		requireEmailVerification: true,
