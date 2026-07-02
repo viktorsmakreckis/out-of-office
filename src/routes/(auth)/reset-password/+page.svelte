@@ -28,7 +28,7 @@
 		<form method="POST" use:enhance>
 			<input type="hidden" name="token" bind:value={$form.token} />
 			<Field.Group>
-				<Field.Error errors={toFieldErrors($errors._errors as string[] | undefined)} />
+				<Field.Error errors={toFieldErrors($errors._errors)} />
 				<Field.Field data-invalid={!!$errors.password || undefined}>
 					<Field.Label for="reset-password">{m.auth_new_password_label()}</Field.Label>
 					<Input
@@ -40,7 +40,7 @@
 						aria-invalid={$errors.password ? 'true' : undefined}
 						{...$constraints.password}
 					/>
-					<Field.Error errors={toFieldErrors($errors.password as string[] | undefined)} />
+					<Field.Error errors={toFieldErrors($errors.password)} />
 				</Field.Field>
 				<Button type="submit" disabled={$submitting}>
 					{#if $submitting}<Spinner />{/if}

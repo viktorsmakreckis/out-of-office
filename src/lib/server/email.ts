@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { m } from '$lib/paraglide/messages.js';
 import { baseLocale, isLocale, type Locale } from '$lib/paraglide/runtime';
@@ -15,7 +16,12 @@ export function userLocale(user: Record<string, unknown>): Locale {
 }
 
 function escapeHtml(value: string): string {
-	return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
 }
 
 function actionEmail(subject: string, body: string, cta: string, url: string): EmailContent {
@@ -67,9 +73,13 @@ export function changeEmailConfirmationEmail(
 
 export async function sendEmail(to: string, content: EmailContent): Promise<void> {
 	if (!env.RESEND_API_KEY) {
-		console.info(`[email] to=${to} subject="${content.subject}"\n${content.text}`);
-		return;
+		if (dev) {
+			console.info(`[email] to=${to} subject="${content.subject}"\n${content.text}`);
+			return;
+		}
+		throw new Error('RESEND_API_KEY is not set');
 	}
+	if (!env.RESEND_EMAIL_ADDRESS) throw new Error('RESEND_EMAIL_ADDRESS is not set');
 	const resend = new Resend(env.RESEND_API_KEY);
 	const { error } = await resend.emails.send({
 		from: env.RESEND_EMAIL_ADDRESS,

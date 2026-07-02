@@ -41,7 +41,7 @@
 						aria-invalid={$errors.email ? 'true' : undefined}
 						{...$constraints.email}
 					/>
-					<Field.Error errors={toFieldErrors($errors.email as string[] | undefined)} />
+					<Field.Error errors={toFieldErrors($errors.email)} />
 				</Field.Field>
 				<Button type="submit" disabled={$submitting}>
 					{#if $submitting}<Spinner />{/if}

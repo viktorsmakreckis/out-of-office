@@ -30,7 +30,7 @@
 			<NavigationMenu.Root>
 				<NavigationMenu.List>
 					<NavigationMenu.Item>
-						<NavigationMenu.Link href="/app">{m.nav_home()}</NavigationMenu.Link>
+						<NavigationMenu.Link href={resolve('/app')}>{m.nav_home()}</NavigationMenu.Link>
 					</NavigationMenu.Item>
 				</NavigationMenu.List>
 			</NavigationMenu.Root>
@@ -98,4 +98,9 @@
 	</main>
 </div>
 
-<form id="signout-form" method="POST" action="/app/signout" class="hidden"></form>
+<form
+	id="signout-form"
+	method="POST"
+	action={resolve('/app/signout' as Pathname)}
+	class="hidden"
+></form>

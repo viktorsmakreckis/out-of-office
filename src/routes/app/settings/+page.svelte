@@ -81,7 +81,7 @@
 		<Card.Content>
 			<form method="POST" action="?/profile" use:profileEnhance>
 				<Field.Group>
-					<Field.Error errors={toFieldErrors($profileErrors._errors as string[] | undefined)} />
+					<Field.Error errors={toFieldErrors($profileErrors._errors)} />
 					<Field.Field data-invalid={!!$profileErrors.name || undefined}>
 						<Field.Label for="profile-name">{m.auth_name_label()}</Field.Label>
 						<Input
@@ -92,7 +92,7 @@
 							aria-invalid={$profileErrors.name ? 'true' : undefined}
 							{...$profileConstraints.name}
 						/>
-						<Field.Error errors={toFieldErrors($profileErrors.name as string[] | undefined)} />
+						<Field.Error errors={toFieldErrors($profileErrors.name)} />
 					</Field.Field>
 					<Field.Field data-invalid={!!$profileErrors.locale || undefined}>
 						<Field.Label for="profile-locale">{m.settings_language_label()}</Field.Label>
@@ -113,7 +113,7 @@
 								</Select.Group>
 							</Select.Content>
 						</Select.Root>
-						<Field.Error errors={toFieldErrors($profileErrors.locale as string[] | undefined)} />
+						<Field.Error errors={toFieldErrors($profileErrors.locale)} />
 					</Field.Field>
 					<Field.Field data-invalid={!!$profileErrors.timezone || undefined}>
 						<Field.Label for="profile-timezone">{m.settings_timezone_label()}</Field.Label>
@@ -129,7 +129,7 @@
 								</Select.Group>
 							</Select.Content>
 						</Select.Root>
-						<Field.Error errors={toFieldErrors($profileErrors.timezone as string[] | undefined)} />
+						<Field.Error errors={toFieldErrors($profileErrors.timezone)} />
 					</Field.Field>
 					<div>
 						<Button type="submit" disabled={$profileSubmitting}>
@@ -161,7 +161,7 @@
 							aria-invalid={$emailErrors.newEmail ? 'true' : undefined}
 							{...$emailConstraints.newEmail}
 						/>
-						<Field.Error errors={toFieldErrors($emailErrors.newEmail as string[] | undefined)} />
+						<Field.Error errors={toFieldErrors($emailErrors.newEmail)} />
 					</Field.Field>
 					<div>
 						<Button type="submit" disabled={$emailSubmitting}>
@@ -195,9 +195,7 @@
 							aria-invalid={$passwordErrors.currentPassword ? 'true' : undefined}
 							{...$passwordConstraints.currentPassword}
 						/>
-						<Field.Error
-							errors={toFieldErrors($passwordErrors.currentPassword as string[] | undefined)}
-						/>
+						<Field.Error errors={toFieldErrors($passwordErrors.currentPassword)} />
 					</Field.Field>
 					<Field.Field data-invalid={!!$passwordErrors.newPassword || undefined}>
 						<Field.Label for="settings-new-password">{m.auth_new_password_label()}</Field.Label>
@@ -210,9 +208,7 @@
 							aria-invalid={$passwordErrors.newPassword ? 'true' : undefined}
 							{...$passwordConstraints.newPassword}
 						/>
-						<Field.Error
-							errors={toFieldErrors($passwordErrors.newPassword as string[] | undefined)}
-						/>
+						<Field.Error errors={toFieldErrors($passwordErrors.newPassword)} />
 					</Field.Field>
 					<div>
 						<Button type="submit" disabled={$passwordSubmitting}>
@@ -255,7 +251,7 @@
 								bind:value={$deleteForm.password}
 								aria-invalid={$deleteErrors.password ? 'true' : undefined}
 							/>
-							<Field.Error errors={toFieldErrors($deleteErrors.password as string[] | undefined)} />
+							<Field.Error errors={toFieldErrors($deleteErrors.password)} />
 						</Field.Field>
 						<AlertDialog.Footer>
 							<AlertDialog.Cancel>{m.cancel()}</AlertDialog.Cancel>

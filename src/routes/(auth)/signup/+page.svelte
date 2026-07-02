@@ -37,7 +37,7 @@
 			<input type="hidden" name="timezone" bind:value={$form.timezone} />
 			<input type="hidden" name="locale" bind:value={$form.locale} />
 			<Field.Group>
-				<Field.Error errors={toFieldErrors($errors._errors as string[] | undefined)} />
+				<Field.Error errors={toFieldErrors($errors._errors)} />
 				<Field.Field data-invalid={!!$errors.name || undefined}>
 					<Field.Label for="signup-name">{m.auth_name_label()}</Field.Label>
 					<Input
@@ -48,7 +48,7 @@
 						aria-invalid={$errors.name ? 'true' : undefined}
 						{...$constraints.name}
 					/>
-					<Field.Error errors={toFieldErrors($errors.name as string[] | undefined)} />
+					<Field.Error errors={toFieldErrors($errors.name)} />
 				</Field.Field>
 				<Field.Field data-invalid={!!$errors.email || undefined}>
 					<Field.Label for="signup-email">{m.auth_email_label()}</Field.Label>
@@ -61,7 +61,7 @@
 						aria-invalid={$errors.email ? 'true' : undefined}
 						{...$constraints.email}
 					/>
-					<Field.Error errors={toFieldErrors($errors.email as string[] | undefined)} />
+					<Field.Error errors={toFieldErrors($errors.email)} />
 				</Field.Field>
 				<Field.Field data-invalid={!!$errors.password || undefined}>
 					<Field.Label for="signup-password">{m.auth_password_label()}</Field.Label>
@@ -74,7 +74,7 @@
 						aria-invalid={$errors.password ? 'true' : undefined}
 						{...$constraints.password}
 					/>
-					<Field.Error errors={toFieldErrors($errors.password as string[] | undefined)} />
+					<Field.Error errors={toFieldErrors($errors.password)} />
 				</Field.Field>
 				<Button type="submit" disabled={$submitting}>
 					{#if $submitting}<Spinner />{/if}

@@ -20,13 +20,11 @@
 <Card.Root>
 	<Card.Header>
 		<Card.Title>{m.auth_verify_title()}</Card.Title>
-		<Card.Description
-			>{m.auth_verify_description({ email: $form.email as string })}</Card.Description
-		>
+		<Card.Description>{m.auth_verify_description({ email: $form.email })}</Card.Description>
 	</Card.Header>
 	<Card.Content>
 		<form method="POST" use:enhance class="grid gap-3">
-			<Field.Error errors={toFieldErrors($errors._errors as string[] | undefined)} />
+			<Field.Error errors={toFieldErrors($errors._errors)} />
 			<input type="hidden" name="email" bind:value={$form.email} />
 			<Button type="submit" variant="outline" disabled={$submitting}>
 				{#if $submitting}<Spinner />{/if}
