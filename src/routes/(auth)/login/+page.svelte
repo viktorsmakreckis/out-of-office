@@ -47,7 +47,10 @@
 				<Field.Field data-invalid={!!$errors.password || undefined}>
 					<div class="flex items-center justify-between">
 						<Field.Label for="login-password">{m.auth_password_label()}</Field.Label>
-						<a class="text-sm underline underline-offset-4" href={resolve('/forgot-password' as Pathname)}>
+						<a
+							class="text-sm underline underline-offset-4"
+							href={resolve('/forgot-password' as Pathname)}
+						>
 							{m.auth_forgot_password()}
 						</a>
 					</div>
@@ -71,6 +74,8 @@
 	</Card.Content>
 	<Card.Footer class="justify-center gap-1 text-sm">
 		<span class="text-muted-foreground">{m.auth_no_account()}</span>
-		<a class="underline underline-offset-4" href={resolve('/signup' as Pathname)}>{m.auth_signup_cta()}</a>
+		<a class="underline underline-offset-4" href={resolve('/signup' as Pathname)}
+			>{m.auth_signup_cta()}</a
+		>
 	</Card.Footer>
 </Card.Root>

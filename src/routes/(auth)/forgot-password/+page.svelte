@@ -51,6 +51,8 @@
 		</form>
 	</Card.Content>
 	<Card.Footer class="justify-center text-sm">
-		<a class="underline underline-offset-4" href={resolve('/login' as Pathname)}>{m.auth_back_to_login()}</a>
+		<a class="underline underline-offset-4" href={resolve('/login' as Pathname)}
+			>{m.auth_back_to_login()}</a
+		>
 	</Card.Footer>
 </Card.Root>

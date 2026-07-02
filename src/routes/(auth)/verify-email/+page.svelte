@@ -20,7 +20,9 @@
 <Card.Root>
 	<Card.Header>
 		<Card.Title>{m.auth_verify_title()}</Card.Title>
-		<Card.Description>{m.auth_verify_description({ email: $form.email as string })}</Card.Description>
+		<Card.Description
+			>{m.auth_verify_description({ email: $form.email as string })}</Card.Description
+		>
 	</Card.Header>
 	<Card.Content>
 		<form method="POST" use:enhance class="grid gap-3">

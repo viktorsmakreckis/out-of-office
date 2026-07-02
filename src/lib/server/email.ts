@@ -33,15 +33,29 @@ function actionEmail(subject: string, body: string, cta: string, url: string): E
 
 export function verificationEmail(url: string, locale: Locale): EmailContent {
 	const o = { locale };
-	return actionEmail(m.email_verify_subject({}, o), m.email_verify_body({}, o), m.email_verify_cta({}, o), url);
+	return actionEmail(
+		m.email_verify_subject({}, o),
+		m.email_verify_body({}, o),
+		m.email_verify_cta({}, o),
+		url
+	);
 }
 
 export function resetPasswordEmail(url: string, locale: Locale): EmailContent {
 	const o = { locale };
-	return actionEmail(m.email_reset_subject({}, o), m.email_reset_body({}, o), m.email_reset_cta({}, o), url);
+	return actionEmail(
+		m.email_reset_subject({}, o),
+		m.email_reset_body({}, o),
+		m.email_reset_cta({}, o),
+		url
+	);
 }
 
-export function changeEmailConfirmationEmail(url: string, newEmail: string, locale: Locale): EmailContent {
+export function changeEmailConfirmationEmail(
+	url: string,
+	newEmail: string,
+	locale: Locale
+): EmailContent {
 	const o = { locale };
 	return actionEmail(
 		m.email_change_subject({}, o),

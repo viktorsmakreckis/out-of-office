@@ -37,5 +37,11 @@ export default defineConfig(
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
 		rules: {}
+	},
+	{
+		// Vendored shadcn-svelte components are managed by the CLI; don't hold
+		// them to app-level navigation rules.
+		files: ['src/lib/components/ui/**'],
+		rules: { 'svelte/no-navigation-without-resolve': 'off' }
 	}
 );
