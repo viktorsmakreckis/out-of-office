@@ -121,7 +121,7 @@
 							<Select.Trigger id="profile-timezone" class="w-full">
 								{$profileForm.timezone}
 							</Select.Trigger>
-							<Select.Content>
+							<Select.Content class="max-h-72">
 								<Select.Group>
 									{#each timezones as timezone (timezone)}
 										<Select.Item value={timezone}>{timezone}</Select.Item>
