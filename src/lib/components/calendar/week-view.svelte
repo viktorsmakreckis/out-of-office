@@ -172,8 +172,8 @@
 	}
 
 	function startGridSelect(e: PointerEvent, dayIndex: number) {
-		if (e.button !== 0 || readonly || !onRangeSelect) return;
 		suppressClick = false;
+		if (e.button !== 0 || readonly || !onRangeSelect) return;
 		const position = gridPosition(e);
 		if (!position) return;
 		drag = {
@@ -186,9 +186,10 @@
 	}
 
 	function startGridMove(e: PointerEvent, event: TimedEvent<T>) {
-		if (e.button !== 0 || !canEdit(event)) return;
-		e.stopPropagation();
 		suppressClick = false;
+		if (e.button !== 0) return;
+		e.stopPropagation();
+		if (!canEdit(event)) return;
 		const position = gridPosition(e);
 		if (!position) return;
 		drag = {
@@ -203,9 +204,10 @@
 	}
 
 	function startGridResize(e: PointerEvent, event: TimedEvent<T>) {
-		if (e.button !== 0 || !canEdit(event)) return;
-		e.stopPropagation();
 		suppressClick = false;
+		if (e.button !== 0) return;
+		e.stopPropagation();
+		if (!canEdit(event)) return;
 		const position = gridPosition(e);
 		if (!position) return;
 		drag = {
@@ -218,8 +220,8 @@
 	}
 
 	function startLaneSelect(e: PointerEvent) {
-		if (e.button !== 0) return;
 		suppressClick = false;
+		if (e.button !== 0) return;
 		const day = laneDayAtPointer(e);
 		if (!day) return;
 		drag = { kind: 'lane-select', anchor: day, target: day };
@@ -227,9 +229,10 @@
 	}
 
 	function startLaneMove(e: PointerEvent, event: CalendarEvent<T>) {
-		if (e.button !== 0 || !event.allDay || !canEdit(event)) return;
-		e.stopPropagation();
 		suppressClick = false;
+		if (e.button !== 0) return;
+		e.stopPropagation();
+		if (!event.allDay || !canEdit(event)) return;
 		const day = laneDayAtPointer(e);
 		if (!day) return;
 		drag = { kind: 'lane-move', event, anchor: day, target: day };
@@ -237,9 +240,10 @@
 	}
 
 	function startLaneResize(e: PointerEvent, event: CalendarEvent<T>, edge: 'start' | 'end') {
-		if (e.button !== 0 || !event.allDay || !canEdit(event)) return;
-		e.stopPropagation();
 		suppressClick = false;
+		if (e.button !== 0) return;
+		e.stopPropagation();
+		if (!event.allDay || !canEdit(event)) return;
 		const day = laneDayAtPointer(e);
 		if (!day) return;
 		drag = { kind: 'lane-resize', event, edge, target: day };
@@ -268,6 +272,7 @@
 			case 'grid-resize': {
 				const position = gridPosition(e);
 				if (!position) return;
+				// Comparing to the previous frame's target is equivalent to comparing to the initial one: dragMoved only ever latches true.
 				if (position.dayIndex !== drag.targetDay || position.minute !== drag.targetMinute) {
 					dragMoved = true;
 				}
@@ -277,6 +282,7 @@
 			case 'lane-select':
 			case 'lane-move':
 			case 'lane-resize': {
+				// Guarded here, not in startLaneSelect: a plain click must still reach onDayClick in readonly mode.
 				if (drag.kind === 'lane-select' && (readonly || !onRangeSelect)) return;
 				const day = laneDayAtPointer(e);
 				if (!day) return;

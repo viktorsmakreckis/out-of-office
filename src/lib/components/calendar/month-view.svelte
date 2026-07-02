@@ -128,15 +128,15 @@
 	}
 
 	function startSelect(e: PointerEvent, day: CalendarDate) {
-		if (e.button !== 0) return;
 		suppressClick = false;
+		if (e.button !== 0) return;
 		drag = { kind: 'select', anchor: day, target: day };
 		dragMoved = false;
 	}
 
 	function startMove(e: PointerEvent, event: CalendarEvent<T>) {
-		if (e.button !== 0 || !canEdit(event)) return;
 		suppressClick = false;
+		if (e.button !== 0 || !canEdit(event)) return;
 		const day = dayAtPointer(e);
 		if (!day) return;
 		drag = { kind: 'move', event, anchor: day, target: day };
@@ -144,8 +144,8 @@
 	}
 
 	function startResize(e: PointerEvent, event: CalendarEvent<T>, edge: 'start' | 'end') {
-		if (e.button !== 0 || !event.allDay || !canEdit(event)) return;
 		suppressClick = false;
+		if (e.button !== 0 || !event.allDay || !canEdit(event)) return;
 		const day = dayAtPointer(e);
 		if (!day) return;
 		drag = { kind: 'resize', event, edge, target: day };
@@ -157,6 +157,7 @@
 		const day = dayAtPointer(e);
 		if (!day) return;
 		if (drag.kind === 'select' && (readonly || !onRangeSelect)) return;
+		// Comparing to the previous frame's target is equivalent to comparing to the initial one: dragMoved only ever latches true.
 		const reference = drag.kind === 'resize' ? drag.target : drag.anchor;
 		if (day.compare(reference) !== 0) dragMoved = true;
 		drag = { ...drag, target: day };
