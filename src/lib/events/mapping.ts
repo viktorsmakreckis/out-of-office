@@ -29,7 +29,10 @@ export function safeTimezone(timezone: string): string {
 	return knownTimezones.has(timezone) ? timezone : 'UTC';
 }
 
-export function toCalendarEvent(record: EventRecord, timezone: string): CalendarEvent<EventRecord> {
+export function toCalendarEvent<T extends EventRecord>(
+	record: T,
+	timezone: string
+): CalendarEvent<T> {
 	timezone = safeTimezone(timezone);
 	const base = {
 		id: record.id,

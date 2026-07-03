@@ -47,9 +47,7 @@
 
 	const events = $derived(
 		data.records.map((record) => {
-			// Cast: toCalendarEvent's `data` field is `record` itself, which carries the full
-			// Record (including ownerId/ownerName), not just the EventRecord subset it declares.
-			const event = toCalendarEvent(record, data.user.timezone) as CalendarEvent<Record>;
+			const event = toCalendarEvent(record, data.user.timezone);
 			if (record.ownerId !== data.user.id) {
 				return { ...event, title: `${record.ownerName} · ${event.title}`, editable: false };
 			}
