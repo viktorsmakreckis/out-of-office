@@ -312,7 +312,7 @@
 	"integrations_test_sent": "Wiadomość testowa wysłana.",
 	"integrations_test_failed": "Wiadomość testowa nie powiodła się — sprawdź adres webhooka.",
 	"integrations_invalid_webhook_url": "To nie jest prawidłowy adres webhooka dla wybranego dostawcy.",
-	"integrations_failing": "Niedziała od {date}",
+	"integrations_failing": "Nie działa od {date}",
 	"integrations_empty": "Brak połączeń.",
 	"feed_title": "Kanał kalendarza",
 	"feed_team_description": "Subskrybuj ten adres w Outlooku, Kalendarzu Google lub Apple Calendar, aby widzieć nieobecności tego zespołu.",
