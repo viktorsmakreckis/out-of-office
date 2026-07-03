@@ -247,6 +247,7 @@
 
 	"landing_meta_title": "Wspólny kalendarz urlopów dla małych zespołów",
 	"landing_meta_description": "Wspólny kalendarz urlopów dla małych zespołów. Dodaj swoje dni wolne, udostępnij kalendarz i nikt nie musi pytać, kto jest nieobecny.",
+	"landing_nav_aria": "Nawigacja główna",
 	"landing_nav_features": "Funkcje",
 	"landing_nav_how_it_works": "Jak to działa",
 	"landing_nav_faq": "FAQ",
@@ -291,5 +292,6 @@
 	"landing_cta_subtitle": "Dodanie pierwszej nieobecności zajmuje minutę.",
 	"landing_cta_button": "Utwórz swój kalendarz",
 	"landing_footer_tagline": "Wspólny kalendarz urlopów dla małych zespołów.",
-	"landing_footer_copyright": "© {year} Out of Office"
+	"landing_footer_copyright": "© {year} Out of Office",
+	"landing_footer_nav_aria": "Nawigacja stopki"
 }

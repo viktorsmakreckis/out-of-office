@@ -16,7 +16,10 @@
 			</p>
 			<p class="mt-2 text-sm text-muted-foreground">{m.landing_footer_tagline()}</p>
 		</div>
-		<nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+		<nav
+			aria-label={m.landing_footer_nav_aria()}
+			class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
+		>
 			<a href="#features" class="transition-colors hover:text-foreground"
 				>{m.landing_nav_features()}</a
 			>

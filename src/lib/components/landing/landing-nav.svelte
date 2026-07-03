@@ -7,7 +7,10 @@
 </script>
 
 <header class="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
-	<nav class="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+	<nav
+		aria-label={m.landing_nav_aria()}
+		class="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6"
+	>
 		<a href={resolve('/' as Pathname)} class="flex items-center gap-2 font-semibold tracking-tight">
 			<span class="flex size-6 items-center justify-center rounded-full bg-sunset-500 text-white">
 				<SunIcon class="size-4" />

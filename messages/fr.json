@@ -247,6 +247,7 @@
 
 	"landing_meta_title": "Le calendrier d'absences partagé pour les petites équipes",
 	"landing_meta_description": "Un calendrier d'absences partagé pour les petites équipes. Ajoutez vos jours d'absence, partagez votre calendrier, et personne n'a besoin de demander qui est absent.",
+	"landing_nav_aria": "Navigation principale",
 	"landing_nav_features": "Fonctionnalités",
 	"landing_nav_how_it_works": "Comment ça marche",
 	"landing_nav_faq": "FAQ",
@@ -291,5 +292,6 @@
 	"landing_cta_subtitle": "Ajouter votre première absence prend une minute.",
 	"landing_cta_button": "Créez votre calendrier",
 	"landing_footer_tagline": "Le calendrier d'absences partagé pour les petites équipes.",
-	"landing_footer_copyright": "© {year} Out of Office"
+	"landing_footer_copyright": "© {year} Out of Office",
+	"landing_footer_nav_aria": "Navigation du pied de page"
 }

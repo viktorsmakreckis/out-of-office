@@ -247,6 +247,7 @@
 
 	"landing_meta_title": "The shared time-off calendar for small teams",
 	"landing_meta_description": "A shared time-off calendar for small teams. Add your days away, share your calendar, and nobody has to ask who's off.",
+	"landing_nav_aria": "Primary",
 	"landing_nav_features": "Features",
 	"landing_nav_how_it_works": "How it works",
 	"landing_nav_faq": "FAQ",
@@ -291,5 +292,6 @@
 	"landing_cta_subtitle": "It takes a minute to add your first time off.",
 	"landing_cta_button": "Create your calendar",
 	"landing_footer_tagline": "The shared time-off calendar for small teams.",
-	"landing_footer_copyright": "© {year} Out of Office"
+	"landing_footer_copyright": "© {year} Out of Office",
+	"landing_footer_nav_aria": "Footer"
 }
