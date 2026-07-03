@@ -113,7 +113,10 @@ export const calendarShareHide = pgTable(
 			.notNull()
 			.references(() => calendarShare.id, { onDelete: 'cascade' })
 	},
-	(table) => [primaryKey({ columns: [table.userId, table.shareId] })]
+	(table) => [
+		primaryKey({ columns: [table.userId, table.shareId] }),
+		index('calendar_share_hide_share_id_idx').on(table.shareId)
+	]
 );
 
 export const notificationTypeEnum = pgEnum('notification_type', [

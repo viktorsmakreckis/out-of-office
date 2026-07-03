@@ -43,6 +43,13 @@
       "when": 1783028710583,
       "tag": "0005_calendar-sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783060875458,
+      "tag": "0006_share-hide-index",
+      "breakpoints": true
     }
   ]
 }
