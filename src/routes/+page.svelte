@@ -1,5 +1,6 @@
 <script lang="ts">
 	import LandingFooter from '$lib/components/landing/landing-footer.svelte';
+	import LandingHero from '$lib/components/landing/landing-hero.svelte';
 	import LandingNav from '$lib/components/landing/landing-nav.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 </script>
@@ -11,6 +12,8 @@
 
 <div class="flex min-h-svh flex-col">
 	<LandingNav />
-	<main class="flex-1"></main>
+	<main class="flex-1">
+		<LandingHero />
+	</main>
 	<LandingFooter />
 </div>
