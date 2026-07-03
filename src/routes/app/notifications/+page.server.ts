@@ -6,6 +6,7 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
 import { invitationActionSchema } from '$lib/schemas/team';
 import { shareBackSchema } from '$lib/schemas/share';
+import { toAppNotification } from '$lib/notifications';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { calendarShare, invitation, notification, organization } from '$lib/server/db/schema';
@@ -42,7 +43,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// Pending invitation ids: a team_invite notification only shows Accept/Decline
 	// while its invitation is still actionable.
 	return {
-		notifications,
+		notifications: notifications.map(toAppNotification),
 		pendingInvitationIds: pendingInvitations.map((row) => row.id)
 	};
 };
@@ -64,7 +65,9 @@ export const actions: Actions = {
 					eq(notification.type, 'calendar_shared')
 				)
 			);
-		const shareId = row?.data.shareId;
+		const entry = row ? toAppNotification(row) : undefined;
+		if (!entry || entry.type !== 'calendar_shared') return fail(404, { form });
+		const shareId = entry.data.shareId;
 		if (!shareId) return fail(404, { form });
 		const [originalShare] = await db
 			.select()

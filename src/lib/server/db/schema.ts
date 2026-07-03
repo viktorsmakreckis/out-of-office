@@ -126,13 +126,15 @@ export const notificationTypeEnum = pgEnum('notification_type', [
 	'event_updated'
 ]);
 
-export type NotificationData = {
-	shareId?: string;
-	invitationId?: string;
-	teamName?: string;
-	eventTitle?: string | null;
-	eventType?: string;
-};
+/**
+ * Per-type notification payloads. The jsonb column is typed as their union so writers
+ * keep working with exact shapes; see `toAppNotification` in `$lib/notifications` for the
+ * discriminated read-side view.
+ */
+export type TeamInviteData = { invitationId: string; teamName: string };
+export type CalendarSharedData = { shareId: string };
+export type EventChangeData = { eventTitle: string | null; eventType: string };
+export type NotificationData = TeamInviteData | CalendarSharedData | EventChangeData;
 
 export const notification = pgTable(
 	'notification',
@@ -145,7 +147,11 @@ export const notification = pgTable(
 			.references(() => user.id, { onDelete: 'cascade' }),
 		type: notificationTypeEnum('type').notNull(),
 		actorName: text('actor_name').notNull(),
-		data: jsonb('data').$type<NotificationData>().notNull().default({}),
+		// Cast: DB-level default only; every writer supplies an exact-shaped `data` value.
+		data: jsonb('data')
+			.$type<NotificationData>()
+			.notNull()
+			.default({} as NotificationData),
 		readAt: timestamp('read_at', { withTimezone: true }),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},

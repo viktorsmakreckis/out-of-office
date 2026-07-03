@@ -3,21 +3,20 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Item from '$lib/components/ui/item';
+	import type { AppNotification } from '$lib/notifications';
 	import { m } from '$lib/paraglide/messages.js';
 
 	let { data } = $props();
 
-	type Notification = (typeof data.notifications)[number];
-
 	const pendingIds = $derived(new Set(data.pendingInvitationIds));
 	const hasUnread = $derived(data.notifications.some((n) => n.readAt === null));
 
-	function text(entry: Notification): string {
+	function text(entry: AppNotification): string {
 		switch (entry.type) {
 			case 'team_invite':
 				return m.notification_team_invite({
 					name: entry.actorName,
-					team: entry.data.teamName ?? ''
+					team: entry.data.teamName
 				});
 			case 'calendar_shared':
 				return m.notification_calendar_shared({ name: entry.actorName });
@@ -58,7 +57,7 @@
 						<Item.Title>{text(entry)}</Item.Title>
 						<Item.Description>
 							{dateFormat.format(entry.createdAt)}
-							{#if entry.data.eventTitle}
+							{#if (entry.type === 'event_created' || entry.type === 'event_updated') && entry.data.eventTitle}
 								· {entry.data.eventTitle}
 							{/if}
 						</Item.Description>
@@ -67,7 +66,7 @@
 						{#if entry.readAt === null}
 							<Badge variant="default" class="h-2 w-2 rounded-full p-0" />
 						{/if}
-						{#if entry.type === 'team_invite' && entry.data.invitationId && pendingIds.has(entry.data.invitationId)}
+						{#if entry.type === 'team_invite' && pendingIds.has(entry.data.invitationId)}
 							<form method="POST" action="?/acceptInvitation">
 								<input type="hidden" name="invitationId" value={entry.data.invitationId} />
 								<Button type="submit" size="sm">{m.invitation_accept()}</Button>
