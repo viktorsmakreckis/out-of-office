@@ -291,6 +291,7 @@
 	"landing_footer_nav_aria": "Footer",
 	"channel_message_created": "{emoji} {name} is out {range} ({label})",
 	"channel_message_updated": "{emoji} {name} updated their time off: {range} ({label})",
+	"channel_message_deleted": "{emoji} {name} cancelled their time off: {range} ({label})",
 	"channel_message_test": "👋 Test message from Out of Office — this channel is connected.",
 	"integrations_title": "Integrations",
 	"integrations_description": "Post out-of-office updates to your team's channels.",

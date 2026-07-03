@@ -291,6 +291,7 @@
 	"landing_footer_nav_aria": "Navigation du pied de page",
 	"channel_message_created": "{emoji} {name} est absent(e) {range} ({label})",
 	"channel_message_updated": "{emoji} {name} a modifié son absence : {range} ({label})",
+	"channel_message_deleted": "{emoji} {name} a annulé son absence : {range} ({label})",
 	"channel_message_test": "👋 Message de test d'Out of Office — ce canal est connecté.",
 	"integrations_title": "Intégrations",
 	"integrations_description": "Publiez les absences dans les canaux de votre équipe.",
