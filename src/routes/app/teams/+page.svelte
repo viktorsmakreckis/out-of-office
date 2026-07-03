@@ -47,7 +47,7 @@
 		>
 			<Dialog.Trigger>
 				{#snippet child({ props })}
-					<Button {...props}>{m.teams_create_cta()}</Button>
+					<Button {...props} size="sm">{m.teams_create_cta()}</Button>
 				{/snippet}
 			</Dialog.Trigger>
 			<Dialog.Content>
