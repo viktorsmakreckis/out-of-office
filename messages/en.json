@@ -293,5 +293,9 @@
 	"landing_cta_button": "Create your calendar",
 	"landing_footer_tagline": "The shared time-off calendar for small teams.",
 	"landing_footer_copyright": "© {year} Out of Office",
-	"landing_footer_nav_aria": "Footer"
+	"landing_footer_nav_aria": "Footer",
+
+	"channel_message_created": "{emoji} {name} is out {range} ({label})",
+	"channel_message_updated": "{emoji} {name} updated their time off: {range} ({label})",
+	"channel_message_test": "👋 Test message from Out of Office — this channel is connected."
 }

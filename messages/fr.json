@@ -293,5 +293,9 @@
 	"landing_cta_button": "Créez votre calendrier",
 	"landing_footer_tagline": "Le calendrier d'absences partagé pour les petites équipes.",
 	"landing_footer_copyright": "© {year} Out of Office",
-	"landing_footer_nav_aria": "Navigation du pied de page"
+	"landing_footer_nav_aria": "Navigation du pied de page",
+
+	"channel_message_created": "{emoji} {name} est absent(e) {range} ({label})",
+	"channel_message_updated": "{emoji} {name} a modifié son absence : {range} ({label})",
+	"channel_message_test": "👋 Message de test d'Out of Office — ce canal est connecté."
 }

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
-import { m } from '$lib/paraglide/messages.js';
+import { eventTypeLabelFor } from '$lib/events/labels';
 import { isLocale, baseLocale } from '$lib/paraglide/runtime';
 import { db } from '$lib/server/db';
 import {
@@ -83,23 +83,6 @@ export async function notifyShareCreated(
 	await notifyRecipients(recipients, 'calendar_shared', sharerName, { shareId }, (recipient) =>
 		calendarSharedEmail(sharerName, notificationsUrl(), recipientLocale(recipient))
 	);
-}
-
-function eventTypeLabelFor(type: string, locale: ReturnType<typeof recipientLocale>): string {
-	switch (type) {
-		case 'vacation':
-			return m.calendar_event_type_vacation({}, { locale });
-		case 'sick_leave':
-			return m.calendar_event_type_sick_leave({}, { locale });
-		case 'business_trip':
-			return m.calendar_event_type_business_trip({}, { locale });
-		case 'public_holiday':
-			return m.calendar_event_type_public_holiday({}, { locale });
-		case 'remote_work':
-			return m.calendar_event_type_remote_work({}, { locale });
-		default:
-			return m.calendar_event_type_other({}, { locale });
-	}
 }
 
 /** Notifies everyone who can see the actor's calendar about a created/updated event. */

@@ -293,5 +293,9 @@
 	"landing_cta_button": "Utwórz swój kalendarz",
 	"landing_footer_tagline": "Wspólny kalendarz urlopów dla małych zespołów.",
 	"landing_footer_copyright": "© {year} Out of Office",
-	"landing_footer_nav_aria": "Nawigacja stopki"
+	"landing_footer_nav_aria": "Nawigacja stopki",
+
+	"channel_message_created": "{emoji} {name} jest nieobecny(-a) {range} ({label})",
+	"channel_message_updated": "{emoji} {name} zmienił(a) swoją nieobecność: {range} ({label})",
+	"channel_message_test": "👋 Wiadomość testowa z Out of Office — ten kanał jest połączony."
 }
