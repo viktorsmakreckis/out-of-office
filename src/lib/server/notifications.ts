@@ -8,6 +8,7 @@ import {
 	notification,
 	organization,
 	user,
+	type EventChangeData,
 	type NotificationData
 } from '$lib/server/db/schema';
 import {
@@ -17,9 +18,12 @@ import {
 	type EmailContent
 } from '$lib/server/email';
 import { postEventToTeamChannels } from '$lib/server/integrations/webhooks';
+import { enqueueEventDelivery } from '$lib/server/queue';
+import type { EventDeliveryPayload } from '$lib/server/queue/job';
 import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } from './sharing';
 
-type NotificationType = 'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated';
+type NotificationType =
+	'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated' | 'event_deleted';
 
 /** Inserts in-app rows and sends emails; email failures are logged, never thrown. */
 async function notifyRecipients(
@@ -41,7 +45,7 @@ async function notifyRecipients(
 	}
 }
 
-function recipientLocale(recipient: Recipient) {
+function recipientLocale(recipient: { locale: string }) {
 	return isLocale(recipient.locale) ? recipient.locale : baseLocale;
 }
 
@@ -86,27 +90,84 @@ export async function notifyShareCreated(
 	);
 }
 
-/** Notifies everyone who can see the actor's calendar about a created/updated event. */
+/** created/updated/deleted → the stored notification type. */
+export function eventNotificationType(
+	kind: 'created' | 'updated' | 'deleted'
+): 'event_created' | 'event_updated' | 'event_deleted' {
+	return kind === 'created'
+		? 'event_created'
+		: kind === 'updated'
+			? 'event_updated'
+			: 'event_deleted';
+}
+
+/**
+ * In-band: resolves the audience, writes the in-app notification rows (fast,
+ * local Postgres), then enqueues the slow external delivery (emails + webhooks)
+ * with the resolved recipients so the emailed audience matches the in-app one.
+ */
 export async function notifyEventChange(
 	actor: { id: string; name: string },
-	kind: 'created' | 'updated',
+	kind: 'created' | 'updated' | 'deleted',
 	eventTitle: string | null,
 	eventType: string,
 	range: { allDay: boolean; start: Date; end: Date }
 ): Promise<void> {
 	const recipients = await getEventAudience(actor.id);
-	const type = kind === 'created' ? 'event_created' : 'event_updated';
-	await notifyRecipients(recipients, type, actor.name, { eventTitle, eventType }, (recipient) => {
-		const locale = recipientLocale(recipient);
-		const label = eventTitle ?? eventTypeLabelFor(eventType, locale);
-		return eventChangeEmail(actor.name, label, kind, `${env.ORIGIN}/app/calendar`, locale);
-	});
-	await postEventToTeamChannels(actor.id, {
+	if (recipients.length > 0) {
+		await db.insert(notification).values(
+			recipients.map((recipient) => ({
+				userId: recipient.id,
+				type: eventNotificationType(kind),
+				actorName: actor.name,
+				data: { eventTitle, eventType } satisfies EventChangeData
+			}))
+		);
+	}
+	await enqueueEventDelivery({
+		actorId: actor.id,
 		actorName: actor.name,
 		kind,
 		title: eventTitle,
 		type: eventType,
-		range
+		range,
+		emailRecipients: recipients.map((recipient) => ({
+			email: recipient.email,
+			locale: recipient.locale
+		}))
+	});
+}
+
+/**
+ * Worker-side: the external delivery for one event change. Best-effort —
+ * individual email failures are logged, never thrown; webhook posts run after.
+ */
+export async function deliverEventChange(payload: EventDeliveryPayload): Promise<void> {
+	const results = await Promise.allSettled(
+		payload.emailRecipients.map((recipient) => {
+			const locale = recipientLocale(recipient);
+			const label = payload.title ?? eventTypeLabelFor(payload.type, locale);
+			return sendEmail(
+				recipient.email,
+				eventChangeEmail(
+					payload.actorName,
+					label,
+					payload.kind,
+					`${env.ORIGIN}/app/calendar`,
+					locale
+				)
+			);
+		})
+	);
+	for (const result of results) {
+		if (result.status === 'rejected') console.error('[notifications] email failed:', result.reason);
+	}
+	await postEventToTeamChannels(payload.actorId, {
+		actorName: payload.actorName,
+		kind: payload.kind,
+		title: payload.title,
+		type: payload.type,
+		range: payload.range
 	});
 }
 
