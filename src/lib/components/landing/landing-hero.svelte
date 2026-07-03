@@ -10,7 +10,7 @@
 
 <section class="overflow-hidden px-4 pt-16 pb-10 sm:px-6 sm:pt-24">
 	<div
-		class="mx-auto flex max-w-6xl animate-in flex-col items-center text-center duration-700 fade-in slide-in-from-bottom-4 motion-reduce:animate-none"
+		class="relative z-10 mx-auto flex max-w-6xl animate-in flex-col items-center text-center duration-700 fade-in slide-in-from-bottom-4 motion-reduce:animate-none"
 	>
 		<p
 			class="flex items-center gap-2 rounded-full border border-sunset-200 bg-sunset-50 px-4 py-1.5 text-sm font-medium text-sunset-700 dark:border-sunset-500/30 dark:bg-sunset-500/10 dark:text-sunset-300"
