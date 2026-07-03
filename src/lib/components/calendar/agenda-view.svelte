@@ -12,6 +12,8 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { cn } from '$lib/utils.js';
 	import { dotVariants } from './event-chip.svelte';
+	import { mergeProps } from 'bits-ui';
+	import EventTooltip from './event-tooltip.svelte';
 	import { formatDayHeading, formatTimeRange } from './core/format.js';
 	import { eventsOnDay, type CalendarEvent } from './core/types.js';
 
@@ -65,23 +67,27 @@
 				<ul class="flex flex-col gap-px p-1">
 					{#each group.events as event (event.id)}
 						<li>
-							<button
-								type="button"
-								class="hover:bg-muted focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm focus-visible:ring-[3px] focus-visible:outline-none"
-								onclick={() => onEventClick?.(event)}
-							>
-								{#if agendaItem}
-									{@render agendaItem(event)}
-								{:else}
-									<span class={dotVariants({ color: event.color })}></span>
-									<span class="text-muted-foreground min-w-36 shrink-0 whitespace-nowrap">
-										{event.allDay
-											? m.calendar_all_day()
-											: formatTimeRange(event.start, event.end, locale)}
-									</span>
-									<span class="truncate font-medium">{event.title}</span>
-								{/if}
-							</button>
+							<EventTooltip {event} {locale}>
+								{#snippet trigger(tooltipProps)}
+									<button
+										type="button"
+										{...mergeProps(tooltipProps, { onclick: () => onEventClick?.(event) })}
+										class="hover:bg-muted focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+									>
+										{#if agendaItem}
+											{@render agendaItem(event)}
+										{:else}
+											<span class={dotVariants({ color: event.color })}></span>
+											<span class="text-muted-foreground min-w-36 shrink-0 whitespace-nowrap">
+												{event.allDay
+													? m.calendar_all_day()
+													: formatTimeRange(event.start, event.end, locale)}
+											</span>
+											<span class="truncate font-medium">{event.title}</span>
+										{/if}
+									</button>
+								{/snippet}
+							</EventTooltip>
 						</li>
 					{/each}
 				</ul>
