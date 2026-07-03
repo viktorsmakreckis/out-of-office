@@ -21,7 +21,12 @@ export default defineConfig({
 				})
 			}
 		}),
-		paraglideVitePlugin({ project: './project.inlang', outdir: './src/lib/paraglide' })
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			// Explicit user choice (settings cookie) wins over the browser's Accept-Language.
+			strategy: ['cookie', 'globalVariable', 'preferredLanguage', 'baseLocale']
+		})
 	],
 	test: {
 		expect: { requireAssertions: true },
