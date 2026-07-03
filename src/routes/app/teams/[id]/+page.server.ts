@@ -4,6 +4,7 @@ import { redirect } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
+import { addConnectionSchema, connectionIdSchema } from '$lib/schemas/integration';
 import {
 	inviteMemberSchema,
 	memberIdSchema,
@@ -14,7 +15,21 @@ import { shareIdSchema, shareTargetSchema } from '$lib/schemas/share';
 import { auth } from '$lib/server/auth';
 import { authErrorMessage } from '$lib/server/auth-error';
 import { db } from '$lib/server/db';
-import { calendarShare, invitation, member, organization, user } from '$lib/server/db/schema';
+import {
+	calendarShare,
+	integrationConnection,
+	invitation,
+	member,
+	organization,
+	user
+} from '$lib/server/db/schema';
+import {
+	feedUrl,
+	getOrCreateFeedToken,
+	regenerateFeedToken
+} from '$lib/server/integrations/feed-tokens';
+import { testMessage } from '$lib/server/integrations/message';
+import { deliverToConnection, isAllowedWebhookUrl } from '$lib/server/integrations/webhooks';
 import { notifyShareCreated } from '$lib/server/notifications';
 import { createShare, shareNameMaps, type ShareEntity } from '$lib/server/sharing';
 import type { Actions, PageServerLoad } from './$types';
@@ -104,6 +119,24 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		superValidate({ name: team.name }, zod4(renameTeamSchema), { id: 'rename' }),
 		superValidate(zod4(shareTargetSchema), { id: 'share' })
 	]);
+	const canManage = membership.role === 'owner' || membership.role === 'admin';
+	const integrations = canManage
+		? {
+				connections: await db
+					.select({
+						id: integrationConnection.id,
+						provider: integrationConnection.provider,
+						label: integrationConnection.label,
+						consecutiveFailures: integrationConnection.consecutiveFailures,
+						lastFailureAt: integrationConnection.lastFailureAt
+					})
+					.from(integrationConnection)
+					.where(eq(integrationConnection.orgId, params.id))
+					.orderBy(integrationConnection.createdAt),
+				feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'org', id: params.id })),
+				connectionForm: await superValidate(zod4(addConnectionSchema), { id: 'connection' })
+			}
+		: null;
 	return {
 		team,
 		members,
@@ -114,7 +147,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		myRole: membership.role,
 		inviteForm,
 		renameForm,
-		shareForm
+		shareForm,
+		integrations
 	};
 };
 
@@ -344,6 +378,96 @@ export const actions: Actions = {
 			303,
 			teamPath(event.params.id),
 			{ type: 'success', message: m.share_revoked() },
+			event
+		);
+	},
+
+	addConnection: async (event) => {
+		const form = await superValidate(event.request, zod4(addConnectionSchema), {
+			id: 'connection'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		if (!isAllowedWebhookUrl(form.data.provider, form.data.webhookUrl)) {
+			return setError(form, 'webhookUrl', m.integrations_invalid_webhook_url());
+		}
+		await db.insert(integrationConnection).values({
+			orgId: event.params.id,
+			provider: form.data.provider,
+			webhookUrl: form.data.webhookUrl,
+			label: form.data.label === '' ? null : form.data.label,
+			createdById: currentUser.id
+		});
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.integrations_added() },
+			event
+		);
+	},
+
+	removeConnection: async (event) => {
+		const form = await superValidate(event.request, zod4(connectionIdSchema), {
+			id: 'connection-id'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		const deleted = await db
+			.delete(integrationConnection)
+			.where(
+				and(
+					eq(integrationConnection.id, form.data.id),
+					eq(integrationConnection.orgId, event.params.id)
+				)
+			)
+			.returning({ id: integrationConnection.id });
+		if (deleted.length === 0) error(404);
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.integrations_removed() },
+			event
+		);
+	},
+
+	testConnection: async (event) => {
+		const form = await superValidate(event.request, zod4(connectionIdSchema), {
+			id: 'connection-id'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		const [connection] = await db
+			.select()
+			.from(integrationConnection)
+			.where(
+				and(
+					eq(integrationConnection.id, form.data.id),
+					eq(integrationConnection.orgId, event.params.id)
+				)
+			);
+		if (!connection) error(404);
+		const ok = await deliverToConnection(connection, testMessage());
+		redirect(
+			303,
+			teamPath(event.params.id),
+			ok
+				? { type: 'success', message: m.integrations_test_sent() }
+				: { type: 'error', message: m.integrations_test_failed() },
+			event
+		);
+	},
+
+	regenerateFeed: async (event) => {
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		await regenerateFeedToken({ type: 'org', id: event.params.id });
+		redirect(
+			303,
+			teamPath(event.params.id),
+			{ type: 'success', message: m.feed_regenerated() },
 			event
 		);
 	}
