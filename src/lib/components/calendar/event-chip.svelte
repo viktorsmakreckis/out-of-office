@@ -81,9 +81,9 @@
 
 <button
 	type="button"
-	data-slot="calendar-event-chip"
 	class={cn(chipVariants({ color: event.color, continuesLeft, continuesRight }), className)}
 	{...restProps}
+	data-slot="calendar-event-chip"
 >
 	{#if eventContent}
 		{@render eventContent(event)}
