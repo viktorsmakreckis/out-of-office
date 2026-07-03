@@ -48,4 +48,22 @@ describe('postJson', () => {
 		expect(seen.method).toBe('POST');
 		expect(seen.body).toBe(JSON.stringify({ text: 'hi' }));
 	});
+
+	it('sends an abort signal and disallows redirects', async () => {
+		let seen: RequestInit | undefined;
+		const fetchFn = (async (_url: unknown, init?: RequestInit) => {
+			seen = init;
+			return new Response('ok', { status: 200 });
+		}) as typeof fetch;
+		await postJson('https://hooks.slack.com/x', {}, fetchFn);
+		expect(seen?.signal).toBeInstanceOf(AbortSignal);
+		expect(seen?.redirect).toBe('error');
+	});
+
+	it('returns false when the request times out', async () => {
+		const timingOut = (async () => {
+			throw new DOMException('The operation timed out.', 'TimeoutError');
+		}) as typeof fetch;
+		expect(await postJson('https://hooks.slack.com/x', {}, timingOut)).toBe(false);
+	});
 });

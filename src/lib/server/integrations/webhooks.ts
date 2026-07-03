@@ -30,7 +30,9 @@ export async function postJson(
 		const response = await fetchFn(url, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify(payload)
+			body: JSON.stringify(payload),
+			signal: AbortSignal.timeout(5000),
+			redirect: 'error'
 		});
 		return response.ok;
 	} catch {
