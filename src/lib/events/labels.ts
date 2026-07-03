@@ -2,6 +2,9 @@ import { m } from '$lib/paraglide/messages.js';
 import type { Locale } from '$lib/paraglide/runtime';
 import type { EventType } from './types';
 
+// Two parallel switches over EventType: this one resolves the current request locale
+// (client components), eventTypeLabelFor below takes an explicit locale (server fan-out).
+// Keep both cases in sync when adding an event type.
 export function eventTypeLabel(type: EventType): string {
 	switch (type) {
 		case 'vacation':
