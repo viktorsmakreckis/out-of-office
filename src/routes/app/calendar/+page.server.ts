@@ -144,8 +144,31 @@ export const actions: Actions = {
 		const deleted = await db
 			.delete(calendarEvent)
 			.where(and(eq(calendarEvent.id, form.data.id), eq(calendarEvent.userId, user.id)))
-			.returning({ id: calendarEvent.id });
+			.returning({
+				id: calendarEvent.id,
+				type: calendarEvent.type,
+				title: calendarEvent.title,
+				allDay: calendarEvent.allDay,
+				start: calendarEvent.start,
+				end: calendarEvent.end
+			});
 		if (deleted.length === 0) error(404);
+
+		try {
+			await notifyEventChange(
+				{ id: user.id, name: user.name },
+				'deleted',
+				deleted[0].title,
+				deleted[0].type,
+				{
+					allDay: deleted[0].allDay,
+					start: deleted[0].start,
+					end: deleted[0].end
+				}
+			);
+		} catch (err) {
+			console.error('[calendar] notification fan-out failed:', err);
+		}
 
 		redirect(
 			303,
