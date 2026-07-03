@@ -106,6 +106,8 @@ Ignoring the callback (or applying it after a failed persistence call) leaves th
 
 Drags are pointer-based. Keyboard users can reach every element (day cells, chips, rows) and activate the click callbacks; mutations are then up to the consumer's own UI. The agenda view has no drag interactions.
 
+Hovering or keyboard-focusing an event shows a tooltip with the full title and date/time range after a ~500ms delay; it is suppressed while dragging.
+
 ## Snippets
 
 All optional; defaults are provided.
@@ -128,6 +130,8 @@ All optional; defaults are provided.
 ```
 
 The `data` field is typed: passing `events: CalendarEvent<Leave>[]` makes snippets and callbacks receive `CalendarEvent<Leave>`.
+
+The hover/focus tooltip always shows the event's `title` plus its date/time line, regardless of `eventContent` — a custom `eventContent` snippet changes the chip's contents, not the tooltip's.
 
 ## Localization
 

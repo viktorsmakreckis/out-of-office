@@ -1,9 +1,11 @@
 <script lang="ts" generics="T">
 	import { getLocalTimeZone, isToday, type CalendarDate } from '@internationalized/date';
 	import type { Snippet } from 'svelte';
+	import { mergeProps } from 'bits-ui';
 	import { m } from '$lib/paraglide/messages.js';
 	import { cn } from '$lib/utils.js';
 	import EventChip, { blockVariants } from './event-chip.svelte';
+	import EventTooltip from './event-tooltip.svelte';
 	import { layoutDayColumns } from './core/columns.js';
 	import {
 		cellAtPoint,
@@ -394,16 +396,22 @@
 						style="left: {(segment.startCol / 7) * 100}%; width: {(segment.span / 7) *
 							100}%; top: {segment.lane * 24 + 4}px;"
 					>
-						<EventChip
-							event={segment.event}
-							{locale}
-							continuesLeft={segment.continuesLeft}
-							continuesRight={segment.continuesRight}
-							{eventContent}
-							class={cn(canEdit(segment.event) && 'cursor-grab')}
-							onpointerdown={(e: PointerEvent) => startLaneMove(e, segment.event)}
-							onclick={() => eventClick(segment.event)}
-						/>
+						<EventTooltip event={segment.event} {locale} disabled={drag !== null}>
+							{#snippet trigger(tooltipProps)}
+								<EventChip
+									{...mergeProps(tooltipProps, {
+										onpointerdown: (e: PointerEvent) => startLaneMove(e, segment.event),
+										onclick: () => eventClick(segment.event)
+									})}
+									event={segment.event}
+									{locale}
+									continuesLeft={segment.continuesLeft}
+									continuesRight={segment.continuesRight}
+									{eventContent}
+									class={cn(canEdit(segment.event) && 'cursor-grab')}
+								/>
+							{/snippet}
+						</EventTooltip>
 						{#if canEdit(segment.event)}
 							{#if !segment.continuesLeft}
 								<div
@@ -461,26 +469,36 @@
 											placement.colCount) *
 											100}%;"
 									>
-										<button
-											type="button"
-											class={cn(
-												blockVariants({ color: placement.event.color }),
-												canEdit(placement.event) && 'cursor-grab'
-											)}
-											onpointerdown={(e) => startGridMove(e, placement.event)}
-											onclick={() => eventClick(placement.event)}
-										>
-											{#if eventContent}
-												{@render eventContent(placement.event)}
-											{:else}
-												<span class="w-full truncate font-medium">{placement.event.title}</span>
-												{#if placement.endMinute - placement.startMinute >= 30}
-													<span class="w-full truncate opacity-70">
-														{formatTimeRange(placement.event.start, placement.event.end, locale)}
-													</span>
-												{/if}
-											{/if}
-										</button>
+										<EventTooltip event={placement.event} {locale} disabled={drag !== null}>
+											{#snippet trigger(tooltipProps)}
+												<button
+													type="button"
+													{...mergeProps(tooltipProps, {
+														onpointerdown: (e: PointerEvent) => startGridMove(e, placement.event),
+														onclick: () => eventClick(placement.event)
+													})}
+													class={cn(
+														blockVariants({ color: placement.event.color }),
+														canEdit(placement.event) && 'cursor-grab'
+													)}
+												>
+													{#if eventContent}
+														{@render eventContent(placement.event)}
+													{:else}
+														<span class="w-full truncate font-medium">{placement.event.title}</span>
+														{#if placement.endMinute - placement.startMinute >= 30}
+															<span class="w-full truncate opacity-70">
+																{formatTimeRange(
+																	placement.event.start,
+																	placement.event.end,
+																	locale
+																)}
+															</span>
+														{/if}
+													{/if}
+												</button>
+											{/snippet}
+										</EventTooltip>
 										{#if canEdit(placement.event)}
 											<div
 												aria-hidden="true"
