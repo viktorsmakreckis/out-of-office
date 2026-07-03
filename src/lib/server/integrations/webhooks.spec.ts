@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { IntegrationProvider } from '$lib/server/db/schema';
 import { isAllowedWebhookUrl, postJson } from './webhooks';
 
 describe('isAllowedWebhookUrl', () => {
@@ -20,6 +21,12 @@ describe('isAllowedWebhookUrl', () => {
 		expect(isAllowedWebhookUrl('discord', 'http://discord.com/api/webhooks/1/x')).toBe(false);
 		expect(isAllowedWebhookUrl('msteams', 'https://logic.azure.com.evil.com/x')).toBe(false);
 		expect(isAllowedWebhookUrl('slack', 'not a url')).toBe(false);
+	});
+
+	it('rejects a provider with no host rule (guards a future enum widening)', () => {
+		expect(isAllowedWebhookUrl('sms' as IntegrationProvider, 'https://hooks.slack.com/x')).toBe(
+			false
+		);
 	});
 });
 

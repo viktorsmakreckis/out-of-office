@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { IntegrationProvider } from '$lib/server/db/schema';
 import { discordPayload, msteamsPayload, payloadFor, slackPayload } from './formatters';
 import { buildEventMessage } from './message';
 
@@ -7,31 +8,41 @@ const message = buildEventMessage('Alice', 'created', null, 'vacation', {
 	start: new Date('2026-07-06T00:00:00Z'),
 	end: new Date('2026-07-08T00:00:00Z')
 });
+// The exact one-line rendering both markdown flavours wrap the actor name inside.
+const slackText = '🌴 *Alice* is out Jul 6 – Jul 8 (Vacation)';
+const discordText = '🌴 **Alice** is out Jul 6 – Jul 8 (Vacation)';
 
 describe('slackPayload', () => {
-	it('produces mrkdwn text and a section block', () => {
-		const payload = slackPayload(message) as { text: string; blocks: unknown[] };
-		expect(payload.text).toContain('*Alice*');
-		expect(payload.blocks).toHaveLength(1);
+	it('produces the exact Block Kit envelope', () => {
+		expect(slackPayload(message)).toEqual({
+			text: slackText,
+			blocks: [{ type: 'section', text: { type: 'mrkdwn', text: slackText } }]
+		});
 	});
 });
 
 describe('discordPayload', () => {
-	it('produces an embed with markdown bold', () => {
-		const payload = discordPayload(message) as { embeds: { description: string }[] };
-		expect(payload.embeds[0].description).toContain('**Alice**');
+	it('produces the exact embed envelope', () => {
+		expect(discordPayload(message)).toEqual({ embeds: [{ description: discordText }] });
 	});
 });
 
 describe('msteamsPayload', () => {
-	it('wraps an adaptive card attachment', () => {
-		const payload = msteamsPayload(message) as {
-			type: string;
-			attachments: { contentType: string; content: { body: { text: string }[] } }[];
-		};
-		expect(payload.type).toBe('message');
-		expect(payload.attachments[0].contentType).toBe('application/vnd.microsoft.card.adaptive');
-		expect(payload.attachments[0].content.body[0].text).toContain('**Alice**');
+	it('produces the exact Adaptive Card envelope', () => {
+		expect(msteamsPayload(message)).toEqual({
+			type: 'message',
+			attachments: [
+				{
+					contentType: 'application/vnd.microsoft.card.adaptive',
+					content: {
+						$schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+						type: 'AdaptiveCard',
+						version: '1.4',
+						body: [{ type: 'TextBlock', text: discordText, wrap: true }]
+					}
+				}
+			]
+		});
 	});
 });
 
@@ -40,5 +51,9 @@ describe('payloadFor', () => {
 		expect(payloadFor('slack', message)).toEqual(slackPayload(message));
 		expect(payloadFor('discord', message)).toEqual(discordPayload(message));
 		expect(payloadFor('msteams', message)).toEqual(msteamsPayload(message));
+	});
+
+	it('returns null for a provider with no formatter', () => {
+		expect(payloadFor('sms' as IntegrationProvider, message)).toBeNull();
 	});
 });

@@ -34,6 +34,8 @@ const formatters: Record<IntegrationProvider, (message: OooMessage) => unknown> 
 	msteams: msteamsPayload
 };
 
+/** Returns null for a provider with no formatter (guards a future enum widening). */
 export function payloadFor(provider: IntegrationProvider, message: OooMessage): unknown {
-	return formatters[provider](message);
+	const format = formatters[provider];
+	return format ? format(message) : null;
 }

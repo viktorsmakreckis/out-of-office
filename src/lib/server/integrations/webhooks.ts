@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { integrationConnection, member, type IntegrationProvider } from '$lib/server/db/schema';
 import { payloadFor } from './formatters';
@@ -12,13 +12,15 @@ const allowedHost: Record<IntegrationProvider, (host: string) => boolean> = {
 };
 
 export function isAllowedWebhookUrl(provider: IntegrationProvider, raw: string): boolean {
+	const isAllowed = allowedHost[provider];
+	if (!isAllowed) return false;
 	let url: URL;
 	try {
 		url = new URL(raw);
 	} catch {
 		return false;
 	}
-	return url.protocol === 'https:' && allowedHost[provider](url.hostname);
+	return url.protocol === 'https:' && isAllowed(url.hostname);
 }
 
 export async function postJson(
@@ -59,7 +61,9 @@ export async function deliverToConnection(
 	connection: { id: string; provider: IntegrationProvider; webhookUrl: string },
 	message: OooMessage
 ): Promise<boolean> {
-	const ok = await postJson(connection.webhookUrl, payloadFor(connection.provider, message));
+	const payload = payloadFor(connection.provider, message);
+	if (payload === null) return false; // no formatter for this provider — nothing to deliver
+	const ok = await postJson(connection.webhookUrl, payload);
 	await recordDeliveryResult(connection.id, ok);
 	return ok;
 }
@@ -75,9 +79,12 @@ export async function postEventToTeamChannels(actorId: string, message: OooMessa
 		.select()
 		.from(integrationConnection)
 		.where(
-			inArray(
-				integrationConnection.orgId,
-				memberships.map((row) => row.organizationId)
+			and(
+				inArray(
+					integrationConnection.orgId,
+					memberships.map((row) => row.organizationId)
+				),
+				eq(integrationConnection.kind, 'webhook')
 			)
 		);
 	const results = await Promise.allSettled(
