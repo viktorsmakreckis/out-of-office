@@ -3,14 +3,21 @@ import type { IntegrationProvider } from '$lib/server/db/schema';
 import { discordPayload, msteamsPayload, payloadFor, slackPayload } from './formatters';
 import { buildEventMessage } from './message';
 
-const message = buildEventMessage('Alice', 'created', null, 'vacation', {
-	allDay: true,
-	start: new Date('2026-07-06T00:00:00Z'),
-	end: new Date('2026-07-08T00:00:00Z')
-});
-// The exact one-line rendering both markdown flavours wrap the actor name inside.
-const slackText = '🌴 *Alice* is out Jul 6 – Jul 8 (Vacation)';
-const discordText = '🌴 **Alice** is out Jul 6 – Jul 8 (Vacation)';
+const message = buildEventMessage(
+	'Alice',
+	'created',
+	null,
+	'vacation',
+	{
+		allDay: true,
+		start: new Date('2026-07-06T00:00:00Z'),
+		end: new Date('2026-07-08T00:00:00Z')
+	},
+	'en-GB'
+);
+// The exact one-line rendering both markdown flavours wrap the actor name inside (en-GB dates).
+const slackText = '🌴 *Alice* is out 6 Jul – 8 Jul (Vacation)';
+const discordText = '🌴 **Alice** is out 6 Jul – 8 Jul (Vacation)';
 
 describe('slackPayload', () => {
 	it('produces the exact Block Kit envelope', () => {

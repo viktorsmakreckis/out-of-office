@@ -71,6 +71,13 @@
       "when": 1783105510349,
       "tag": "0009_user_locale_en_gb",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783107031712,
+      "tag": "0010_org_locale",
+      "breakpoints": true
     }
   ]
 }

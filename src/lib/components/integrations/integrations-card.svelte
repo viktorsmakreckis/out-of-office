@@ -11,7 +11,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { m } from '$lib/paraglide/messages.js';
-	import { getLocale } from '$lib/paraglide/runtime';
+	import { getLocale, locales, type Locale } from '$lib/paraglide/runtime';
 	import { addConnectionSchema } from '$lib/schemas/integration';
 	import { toFieldErrors } from '$lib/utils';
 	import FeedUrlField from './feed-url-field.svelte';
@@ -28,17 +28,27 @@
 	let {
 		connections,
 		feedUrl,
-		form
+		form,
+		teamLocale
 	}: {
 		connections: ConnectionRow[];
 		feedUrl: string;
 		form: SuperValidated<Infer<typeof addConnectionSchema>>;
+		teamLocale: Locale;
 	} = $props();
 
 	const providerNames: Record<Provider, string> = {
 		slack: 'Slack',
 		discord: 'Discord',
 		msteams: 'Microsoft Teams'
+	};
+
+	// Endonyms are intentionally not translated.
+	const localeLabels: Record<Locale, string> = {
+		'en-GB': 'English (UK)',
+		'en-US': 'English (US)',
+		pl: 'Polski',
+		fr: 'Français'
 	};
 
 	// svelte-ignore state_referenced_locally
@@ -63,6 +73,38 @@
 		<Card.Description>{m.integrations_description()}</Card.Description>
 	</Card.Header>
 	<Card.Content class="grid gap-4">
+		<form id="team-language-form" method="POST" action="?/updateLanguage" use:enhance>
+			<Field.Field>
+				<Field.Label for="team-language">{m.team_language_label()}</Field.Label>
+				<input type="hidden" name="locale" value={teamLocale} />
+				<Select.Root
+					type="single"
+					value={teamLocale}
+					onValueChange={(locale) => {
+						const languageForm = document.getElementById('team-language-form');
+						if (!(languageForm instanceof HTMLFormElement)) return;
+						const input = languageForm.querySelector('input[name="locale"]');
+						if (input instanceof HTMLInputElement && locale) {
+							input.value = locale;
+							languageForm.requestSubmit();
+						}
+					}}
+				>
+					<Select.Trigger id="team-language" class="w-full"
+						>{localeLabels[teamLocale]}</Select.Trigger
+					>
+					<Select.Content>
+						<Select.Group>
+							{#each locales as locale (locale)}
+								<Select.Item value={locale}>{localeLabels[locale]}</Select.Item>
+							{/each}
+						</Select.Group>
+					</Select.Content>
+				</Select.Root>
+				<Field.Description>{m.team_language_description()}</Field.Description>
+			</Field.Field>
+		</form>
+
 		{#if connections.length === 0}
 			<p class="text-sm text-muted-foreground">{m.integrations_empty()}</p>
 		{:else}

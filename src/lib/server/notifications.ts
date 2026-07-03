@@ -16,7 +16,6 @@ import {
 	sendEmail,
 	type EmailContent
 } from '$lib/server/email';
-import { buildEventMessage } from '$lib/server/integrations/message';
 import { postEventToTeamChannels } from '$lib/server/integrations/webhooks';
 import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } from './sharing';
 
@@ -102,10 +101,13 @@ export async function notifyEventChange(
 		const label = eventTitle ?? eventTypeLabelFor(eventType, locale);
 		return eventChangeEmail(actor.name, label, kind, `${env.ORIGIN}/app/calendar`, locale);
 	});
-	await postEventToTeamChannels(
-		actor.id,
-		buildEventMessage(actor.name, kind, eventTitle, eventType, range)
-	);
+	await postEventToTeamChannels(actor.id, {
+		actorName: actor.name,
+		kind,
+		title: eventTitle,
+		type: eventType,
+		range
+	});
 }
 
 /** Display name of a share's sharer entity ("Alice" or the team name). */

@@ -1,8 +1,25 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import { baseLocale, isLocale, type Locale } from '$lib/paraglide/runtime';
 import { db } from '$lib/server/db';
-import { integrationConnection, member, type IntegrationProvider } from '$lib/server/db/schema';
+import {
+	integrationConnection,
+	member,
+	organization,
+	type IntegrationProvider
+} from '$lib/server/db/schema';
 import { payloadFor } from './formatters';
-import type { OooMessage } from './message';
+import { buildEventMessage, type OooMessage } from './message';
+
+/** A calendar-event change ready to render per team, in that team's locale. */
+export type ChannelEvent = {
+	actorName: string;
+	kind: 'created' | 'updated';
+	title: string | null;
+	type: string;
+	range: { allDay: boolean; start: Date; end: Date };
+};
+
+const resolveLocale = (value: string | null): Locale => (isLocale(value) ? value : baseLocale);
 
 /** SSRF guard: only official provider webhook hosts, https only. */
 const allowedHost: Record<IntegrationProvider, (host: string) => boolean> = {
@@ -68,16 +85,25 @@ export async function deliverToConnection(
 	return ok;
 }
 
-/** Best-effort post to every webhook connection of every team the actor is in. */
-export async function postEventToTeamChannels(actorId: string, message: OooMessage): Promise<void> {
+/**
+ * Best-effort post to every webhook connection of every team the actor is in.
+ * Each team's message is rendered in that team's locale.
+ */
+export async function postEventToTeamChannels(actorId: string, event: ChannelEvent): Promise<void> {
 	const memberships = await db
 		.select({ organizationId: member.organizationId })
 		.from(member)
 		.where(eq(member.userId, actorId));
 	if (memberships.length === 0) return;
 	const connections = await db
-		.select()
+		.select({
+			id: integrationConnection.id,
+			provider: integrationConnection.provider,
+			webhookUrl: integrationConnection.webhookUrl,
+			orgLocale: organization.locale
+		})
 		.from(integrationConnection)
+		.innerJoin(organization, eq(integrationConnection.orgId, organization.id))
 		.where(
 			and(
 				inArray(
@@ -88,7 +114,19 @@ export async function postEventToTeamChannels(actorId: string, message: OooMessa
 			)
 		);
 	const results = await Promise.allSettled(
-		connections.map((connection) => deliverToConnection(connection, message))
+		connections.map((connection) =>
+			deliverToConnection(
+				connection,
+				buildEventMessage(
+					event.actorName,
+					event.kind,
+					event.title,
+					event.type,
+					event.range,
+					resolveLocale(connection.orgLocale)
+				)
+			)
+		)
 	);
 	for (const result of results) {
 		if (result.status === 'rejected')

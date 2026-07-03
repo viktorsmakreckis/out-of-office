@@ -68,7 +68,7 @@
 	"auth_new_password_label": "New password",
 	"auth_current_password_label": "Current password",
 	"validation_name_required": "Please enter your name.",
-	"validation_email_invalid": "Please enter a valid email address.",
+	"validation_email_invalid": "Enter a valid email address",
 	"validation_password_min": "Password must be at least 8 characters.",
 	"validation_password_max": "Password must be at most 128 characters.",
 	"validation_timezone_invalid": "Please select a valid timezone.",
@@ -137,12 +137,10 @@
 	"settings_delete_confirm_title": "Are you absolutely sure?",
 	"settings_delete_confirm_description": "This action cannot be undone. Enter your password to confirm.",
 	"settings_deleted": "Your account has been deleted.",
-
 	"nav_teams": "Teams",
 	"nav_sharing": "Sharing",
 	"nav_notifications": "Notifications",
 	"error_forbidden": "You do not have permission to do that.",
-
 	"teams_title": "Teams",
 	"teams_empty": "You are not a member of any team yet.",
 	"teams_create_title": "Create a team",
@@ -153,7 +151,6 @@
 	"team_role_owner": "Owner",
 	"team_role_admin": "Admin",
 	"team_role_member": "Member",
-
 	"team_members_title": "Members",
 	"team_invite_title": "Invite a member",
 	"team_invite_role_label": "Role",
@@ -170,6 +167,9 @@
 	"team_settings_title": "Team settings",
 	"team_rename_cta": "Rename",
 	"team_renamed": "Team renamed",
+	"team_language_label": "Team language",
+	"team_language_description": "Out-of-office updates posted to this team's channels use this language.",
+	"team_language_saved": "Team language updated.",
 	"team_delete_cta": "Delete team",
 	"team_delete_confirm_title": "Delete this team?",
 	"team_delete_confirm_description": "This removes the team, its memberships, its invitations, and its calendar shares.",
@@ -180,7 +180,6 @@
 	"team_left": "You left the team",
 	"team_share_title": "Team calendar",
 	"team_share_description": "Share the calendars of all team members with a person or another team.",
-
 	"sharing_title": "Sharing",
 	"share_form_title": "Share your calendar",
 	"share_form_description": "The recipient will be able to see your events.",
@@ -207,7 +206,6 @@
 	"share_back_done": "Calendar shared back",
 	"share_back_gone": "This share is no longer available.",
 	"share_from_team": "Team {name}",
-
 	"notifications_title": "Notifications",
 	"notifications_empty": "No notifications yet.",
 	"notifications_mark_all_read": "Mark all as read",
@@ -222,13 +220,11 @@
 	"invitation_accepted": "Invitation accepted",
 	"invitation_declined": "Invitation declined",
 	"invitation_gone": "This invitation is no longer valid.",
-
 	"calendar_filter_label": "Show",
 	"calendar_filter_all": "All",
 	"calendar_filter_mine": "Mine",
 	"calendar_filter_teams": "Teams",
 	"calendar_filter_shared": "Shared",
-
 	"email_team_invite_subject": "{name} invited you to team {team}",
 	"email_team_invite_body": "Accept the invitation to see your teammates' calendars in Out of Office.",
 	"email_team_invite_cta": "View invitation",
@@ -239,12 +235,9 @@
 	"email_event_updated_subject": "{name} updated an event",
 	"email_event_change_body": "{name} changed \"{title}\" on a calendar you can see.",
 	"email_event_change_cta": "Open calendar",
-
 	"validation_team_name_required": "Team name is required",
 	"validation_team_name_too_long": "Team name is too long",
-	"validation_email_invalid": "Enter a valid email address",
 	"validation_share_team_required": "Choose a team",
-
 	"landing_meta_title": "The shared time-off calendar for small teams",
 	"landing_meta_description": "A shared time-off calendar for small teams. Add your days away, share your calendar, and nobody has to ask who's off.",
 	"landing_nav_aria": "Primary",
@@ -294,11 +287,9 @@
 	"landing_footer_tagline": "The shared time-off calendar for small teams.",
 	"landing_footer_copyright": "© {year} Out of Office",
 	"landing_footer_nav_aria": "Footer",
-
 	"channel_message_created": "{emoji} {name} is out {range} ({label})",
 	"channel_message_updated": "{emoji} {name} updated their time off: {range} ({label})",
 	"channel_message_test": "👋 Test message from Out of Office — this channel is connected.",
-
 	"integrations_title": "Integrations",
 	"integrations_description": "Post out-of-office updates to your team's channels.",
 	"integrations_provider_label": "Provider",

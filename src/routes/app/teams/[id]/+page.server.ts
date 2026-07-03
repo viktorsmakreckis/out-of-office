@@ -4,12 +4,14 @@ import { redirect, setFlash } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
+import { baseLocale, isLocale } from '$lib/paraglide/runtime';
 import { addConnectionSchema, connectionIdSchema } from '$lib/schemas/integration';
 import {
 	inviteMemberSchema,
 	memberIdSchema,
 	renameTeamSchema,
-	updateRoleSchema
+	updateRoleSchema,
+	updateTeamLanguageSchema
 } from '$lib/schemas/team';
 import { shareIdSchema, shareTargetSchema } from '$lib/schemas/share';
 import { auth } from '$lib/server/auth';
@@ -77,10 +79,11 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const currentUser = requireUser(locals);
 	const membership = await requireMembership(currentUser.id, params.id);
 	const [team] = await db
-		.select({ id: organization.id, name: organization.name })
+		.select({ id: organization.id, name: organization.name, locale: organization.locale })
 		.from(organization)
 		.where(eq(organization.id, params.id));
 	if (!team) error(404);
+	const teamLocale = isLocale(team.locale) ? team.locale : baseLocale;
 	const [members, pendingInvitations, teamShares, allTeams] = await Promise.all([
 		db
 			.select({
@@ -137,7 +140,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			getOrCreateFeedToken({ type: 'org', id: params.id }),
 			superValidate(zod4(addConnectionSchema), { id: 'connection' })
 		]);
-		integrations = { connections, feedUrl: feedUrl(feedToken), connectionForm };
+		integrations = { connections, feedUrl: feedUrl(feedToken), connectionForm, teamLocale };
 	}
 	return {
 		team,
@@ -268,6 +271,25 @@ export const actions: Actions = {
 			return setError(form, '', authErrorMessage(err));
 		}
 		flash(event, { type: 'success', message: m.team_renamed() });
+		return { form };
+	},
+
+	updateLanguage: async (event) => {
+		const form = await superValidate(event.request, zod4(updateTeamLanguageSchema), {
+			id: 'language'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		try {
+			await auth.api.updateOrganization({
+				body: { organizationId: event.params.id, data: { locale: form.data.locale } },
+				headers: event.request.headers
+			});
+		} catch (err) {
+			return setError(form, 'locale', authErrorMessage(err));
+		}
+		flash(event, { type: 'success', message: m.team_language_saved() });
 		return { form };
 	},
 
@@ -414,17 +436,19 @@ export const actions: Actions = {
 		if (!form.valid) return fail(400, { form });
 		const currentUser = requireUser(event.locals);
 		requireManager(await requireMembership(currentUser.id, event.params.id));
-		const [connection] = await db
-			.select()
+		const [row] = await db
+			.select({ connection: integrationConnection, orgLocale: organization.locale })
 			.from(integrationConnection)
+			.innerJoin(organization, eq(integrationConnection.orgId, organization.id))
 			.where(
 				and(
 					eq(integrationConnection.id, form.data.id),
 					eq(integrationConnection.orgId, event.params.id)
 				)
 			);
-		if (!connection) error(404);
-		const ok = await deliverToConnection(connection, testMessage());
+		if (!row) error(404);
+		const teamLocale = isLocale(row.orgLocale) ? row.orgLocale : baseLocale;
+		const ok = await deliverToConnection(row.connection, testMessage(teamLocale));
 		flash(
 			event,
 			ok

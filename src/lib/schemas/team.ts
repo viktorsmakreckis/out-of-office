@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { m } from '$lib/paraglide/messages.js';
+import { locales } from '$lib/paraglide/runtime';
 
 export const createTeamSchema = z.object({
 	name: z
@@ -27,4 +28,8 @@ export const updateRoleSchema = z.object({
 
 export const invitationActionSchema = z.object({
 	invitationId: z.string().min(1, { error: () => m.error_generic() })
+});
+
+export const updateTeamLanguageSchema = z.object({
+	locale: z.enum(locales, { error: () => m.validation_locale_invalid() })
 });
