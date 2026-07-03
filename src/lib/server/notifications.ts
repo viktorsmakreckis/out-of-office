@@ -18,6 +18,7 @@ import {
 	type EmailContent
 } from '$lib/server/email';
 import { postEventToTeamChannels } from '$lib/server/integrations/webhooks';
+import { getUserChannelPrefs, recipientsForChannel } from '$lib/server/notification-preferences';
 import { enqueueEventDelivery } from '$lib/server/queue';
 import type { EventDeliveryPayload } from '$lib/server/queue/job';
 import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } from './sharing';
@@ -25,20 +26,24 @@ import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } fro
 type NotificationType =
 	'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated' | 'event_deleted';
 
-/** Inserts in-app rows and sends emails; email failures are logged, never thrown. */
+/** Inserts in-app rows for `inAppRecipients` and emails `emailRecipients`; email failures are logged, never thrown. */
 async function notifyRecipients(
-	recipients: Recipient[],
+	inAppRecipients: Recipient[],
+	emailRecipients: Recipient[],
 	type: NotificationType,
 	actorName: string,
 	data: NotificationData,
 	emailFor: (recipient: Recipient) => EmailContent
 ): Promise<void> {
-	if (recipients.length === 0) return;
-	await db
-		.insert(notification)
-		.values(recipients.map((recipient) => ({ userId: recipient.id, type, actorName, data })));
+	if (inAppRecipients.length > 0) {
+		await db
+			.insert(notification)
+			.values(
+				inAppRecipients.map((recipient) => ({ userId: recipient.id, type, actorName, data }))
+			);
+	}
 	const results = await Promise.allSettled(
-		recipients.map((recipient) => sendEmail(recipient.email, emailFor(recipient)))
+		emailRecipients.map((recipient) => sendEmail(recipient.email, emailFor(recipient)))
 	);
 	for (const result of results) {
 		if (result.status === 'rejected') console.error('[notifications] email failed:', result.reason);
@@ -85,8 +90,14 @@ export async function notifyShareCreated(
 		return;
 	}
 	const recipients = await resolveTargetRecipients(target);
-	await notifyRecipients(recipients, 'calendar_shared', sharerName, { shareId }, (recipient) =>
-		calendarSharedEmail(sharerName, notificationsUrl(), recipientLocale(recipient))
+	const prefs = await getUserChannelPrefs(recipients.map((recipient) => recipient.id));
+	await notifyRecipients(
+		recipientsForChannel(recipients, prefs, 'sharedInApp'),
+		recipientsForChannel(recipients, prefs, 'sharedEmail'),
+		'calendar_shared',
+		sharerName,
+		{ shareId },
+		(recipient) => calendarSharedEmail(sharerName, notificationsUrl(), recipientLocale(recipient))
 	);
 }
 
@@ -114,9 +125,12 @@ export async function notifyEventChange(
 	range: { allDay: boolean; start: Date; end: Date }
 ): Promise<void> {
 	const recipients = await getEventAudience(actor.id);
-	if (recipients.length > 0) {
+	const prefs = await getUserChannelPrefs(recipients.map((recipient) => recipient.id));
+	const inAppRecipients = recipientsForChannel(recipients, prefs, 'oooInApp');
+	const emailRecipients = recipientsForChannel(recipients, prefs, 'oooEmail');
+	if (inAppRecipients.length > 0) {
 		await db.insert(notification).values(
-			recipients.map((recipient) => ({
+			inAppRecipients.map((recipient) => ({
 				userId: recipient.id,
 				type: eventNotificationType(kind),
 				actorName: actor.name,
@@ -131,7 +145,7 @@ export async function notifyEventChange(
 		title: eventTitle,
 		type: eventType,
 		range,
-		emailRecipients: recipients.map((recipient) => ({
+		emailRecipients: emailRecipients.map((recipient) => ({
 			email: recipient.email,
 			locale: recipient.locale
 		}))
