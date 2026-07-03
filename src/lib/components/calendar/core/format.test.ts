@@ -90,6 +90,13 @@ describe('formatDateRange', () => {
 		expect(label).toContain('7');
 		expect(label).toMatch(/Jul/);
 	});
+
+	it('formats a multi-day range in fr', () => {
+		const label = formatDateRange(jul2, new CalendarDate(2026, 7, 7), 'fr');
+		expect(label).toContain('2');
+		expect(label).toContain('7');
+		expect(label).toMatch(/juil/);
+	});
 });
 
 describe('formatDateTimeRange', () => {
@@ -111,5 +118,16 @@ describe('formatDateTimeRange', () => {
 			'en'
 		);
 		expect(label.match(/Jul/g)).toHaveLength(2);
+	});
+
+	it('shows the date once for a same-day range in fr', () => {
+		const label = formatDateTimeRange(
+			new CalendarDateTime(2026, 7, 2, 9, 0),
+			new CalendarDateTime(2026, 7, 2, 10, 30),
+			'fr'
+		);
+		expect(label).toContain('09:00');
+		expect(label).toContain('10:30');
+		expect(label).toMatch(/juil/);
 	});
 });
