@@ -120,23 +120,25 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		superValidate(zod4(shareTargetSchema), { id: 'share' })
 	]);
 	const canManage = membership.role === 'owner' || membership.role === 'admin';
-	const integrations = canManage
-		? {
-				connections: await db
-					.select({
-						id: integrationConnection.id,
-						provider: integrationConnection.provider,
-						label: integrationConnection.label,
-						consecutiveFailures: integrationConnection.consecutiveFailures,
-						lastFailureAt: integrationConnection.lastFailureAt
-					})
-					.from(integrationConnection)
-					.where(eq(integrationConnection.orgId, params.id))
-					.orderBy(integrationConnection.createdAt),
-				feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'org', id: params.id })),
-				connectionForm: await superValidate(zod4(addConnectionSchema), { id: 'connection' })
-			}
-		: null;
+	let integrations = null;
+	if (canManage) {
+		const [connections, feedToken, connectionForm] = await Promise.all([
+			db
+				.select({
+					id: integrationConnection.id,
+					provider: integrationConnection.provider,
+					label: integrationConnection.label,
+					consecutiveFailures: integrationConnection.consecutiveFailures,
+					lastFailureAt: integrationConnection.lastFailureAt
+				})
+				.from(integrationConnection)
+				.where(eq(integrationConnection.orgId, params.id))
+				.orderBy(integrationConnection.createdAt),
+			getOrCreateFeedToken({ type: 'org', id: params.id }),
+			superValidate(zod4(addConnectionSchema), { id: 'connection' })
+		]);
+		integrations = { connections, feedUrl: feedUrl(feedToken), connectionForm };
+	}
 	return {
 		team,
 		members,
