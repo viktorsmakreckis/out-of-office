@@ -106,9 +106,11 @@
 							{$connectionData.provider ? providerNames[$connectionData.provider] : ''}
 						</Select.Trigger>
 						<Select.Content>
-							<Select.Item value="slack">Slack</Select.Item>
-							<Select.Item value="discord">Discord</Select.Item>
-							<Select.Item value="msteams">Microsoft Teams</Select.Item>
+							<Select.Group>
+								<Select.Item value="slack">Slack</Select.Item>
+								<Select.Item value="discord">Discord</Select.Item>
+								<Select.Item value="msteams">Microsoft Teams</Select.Item>
+							</Select.Group>
 						</Select.Content>
 					</Select.Root>
 					<input type="hidden" name="provider" value={$connectionData.provider} />
