@@ -43,7 +43,12 @@
 	// svelte-ignore state_referenced_locally
 	const connection = superForm(form, {
 		id: 'connection',
-		validators: zod4Client(addConnectionSchema)
+		validators: zod4Client(addConnectionSchema),
+		// Actions redirect on success (flash-message pattern), and superForm only
+		// auto-resets on 'success' — so clear the inline form on redirect ourselves.
+		onResult({ result }) {
+			if (result.type === 'redirect') connection.reset();
+		}
 	});
 	const {
 		form: connectionData,
