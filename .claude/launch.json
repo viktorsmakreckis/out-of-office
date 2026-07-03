@@ -4,7 +4,7 @@
 		{
 			"name": "dev",
 			"runtimeExecutable": "env",
-			"runtimeArgs": ["RESEND_API_KEY=", "pnpm", "dev"],
+			"runtimeArgs": ["RESEND_API_KEY=", "REDIS_URL=redis://localhost:6379", "pnpm", "dev"],
 			"port": 5173
 		}
 	]
