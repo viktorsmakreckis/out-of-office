@@ -23,4 +23,5 @@ export function startNotificationWorker(): void {
 		{ connection, concurrency: 5 }
 	);
 	worker.on('failed', (job, err) => console.error('[queue] job failed:', job?.id, err));
+	worker.on('error', (err) => console.error('[queue] worker error:', err));
 }
