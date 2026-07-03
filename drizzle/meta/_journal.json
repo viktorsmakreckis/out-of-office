@@ -85,6 +85,13 @@
       "when": 1783113413753,
       "tag": "0011_certain_fallen_one",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783119907282,
+      "tag": "0012_smart_darkhawk",
+      "breakpoints": true
     }
   ]
 }
