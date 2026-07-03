@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, gte, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	calendarEvent,
@@ -10,6 +10,9 @@ import {
 } from '$lib/server/db/schema';
 import { buildIcalFeed, type FeedEvent } from '$lib/server/integrations/ical';
 import type { RequestHandler } from './$types';
+
+/** Cap the feed's history so it doesn't grow unbounded; future events are always included. */
+const FEED_LOOKBACK_DAYS = 365;
 
 export const GET: RequestHandler = async ({ params }) => {
 	const [row] = await db
@@ -39,6 +42,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		userIds = members.map((m) => m.userId);
 	}
 
+	const windowStart = new Date(Date.now() - FEED_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
 	const events: FeedEvent[] =
 		userIds.length === 0
 			? []
@@ -55,7 +59,9 @@ export const GET: RequestHandler = async ({ params }) => {
 					})
 					.from(calendarEvent)
 					.innerJoin(user, eq(calendarEvent.userId, user.id))
-					.where(inArray(calendarEvent.userId, userIds));
+					.where(
+						and(inArray(calendarEvent.userId, userIds), gte(calendarEvent.start, windowStart))
+					);
 
 	return new Response(buildIcalFeed(calendarName, events), {
 		headers: {
