@@ -71,7 +71,7 @@ export const actions: Actions = {
 			.from(calendarShare)
 			.where(eq(calendarShare.id, shareId));
 		if (!originalShare) {
-			redirect(303, PATH, { type: 'error', message: m.invitation_gone() }, event);
+			redirect(303, PATH, { type: 'error', message: m.share_back_gone() }, event);
 		}
 		const target: ShareEntity = originalShare.sharerUserId
 			? { type: 'user', id: originalShare.sharerUserId }
@@ -123,6 +123,6 @@ export const actions: Actions = {
 			.update(notification)
 			.set({ readAt: new Date() })
 			.where(and(eq(notification.userId, currentUser.id), isNull(notification.readAt)));
-		redirect(303, PATH, { type: 'success', message: m.notifications_mark_all_read() }, event);
+		redirect(303, PATH, { type: 'success', message: m.notifications_marked_read() }, event);
 	}
 };

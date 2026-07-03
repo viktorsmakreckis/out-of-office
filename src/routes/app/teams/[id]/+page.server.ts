@@ -252,7 +252,12 @@ export const actions: Actions = {
 				headers: event.request.headers
 			});
 		} catch {
-			return fail(400, {});
+			redirect(
+				303,
+				teamPath(event.params.id),
+				{ type: 'error', message: m.error_generic() },
+				event
+			);
 		}
 		redirect(303, '/app/teams', { type: 'success', message: m.team_deleted() }, event);
 	},
@@ -266,7 +271,12 @@ export const actions: Actions = {
 				headers: event.request.headers
 			});
 		} catch {
-			return fail(400, {});
+			redirect(
+				303,
+				teamPath(event.params.id),
+				{ type: 'error', message: m.error_generic() },
+				event
+			);
 		}
 		redirect(303, '/app/teams', { type: 'success', message: m.team_left() }, event);
 	},

@@ -191,11 +191,13 @@
 	"share_self": "You cannot share a calendar with yourself.",
 	"share_back_cta": "Share your calendar back",
 	"share_back_done": "Calendar shared back",
+	"share_back_gone": "This share is no longer available.",
 	"share_from_team": "Team {name}",
 
 	"notifications_title": "Notifications",
 	"notifications_empty": "No notifications yet.",
 	"notifications_mark_all_read": "Mark all as read",
+	"notifications_marked_read": "All notifications marked as read",
 	"notifications_bell_label": "Notifications",
 	"notification_calendar_shared": "{name} shared a calendar with you",
 	"notification_event_created": "{name} created an event",

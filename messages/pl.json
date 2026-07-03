@@ -191,11 +191,13 @@
 	"share_self": "Nie możesz udostępnić kalendarza samemu sobie.",
 	"share_back_cta": "Udostępnij swój kalendarz w zamian",
 	"share_back_done": "Kalendarz udostępniony w zamian",
+	"share_back_gone": "To udostępnienie nie jest już dostępne.",
 	"share_from_team": "Zespół {name}",
 
 	"notifications_title": "Powiadomienia",
 	"notifications_empty": "Brak powiadomień.",
 	"notifications_mark_all_read": "Oznacz wszystkie jako przeczytane",
+	"notifications_marked_read": "Wszystkie powiadomienia oznaczone jako przeczytane",
 	"notifications_bell_label": "Powiadomienia",
 	"notification_calendar_shared": "{name} udostępnia Ci kalendarz",
 	"notification_event_created": "{name} tworzy wydarzenie",
