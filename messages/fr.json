@@ -297,5 +297,28 @@
 
 	"channel_message_created": "{emoji} {name} est absent(e) {range} ({label})",
 	"channel_message_updated": "{emoji} {name} a modifié son absence : {range} ({label})",
-	"channel_message_test": "👋 Message de test d'Out of Office — ce canal est connecté."
+	"channel_message_test": "👋 Message de test d'Out of Office — ce canal est connecté.",
+
+	"integrations_title": "Intégrations",
+	"integrations_description": "Publiez les absences dans les canaux de votre équipe.",
+	"integrations_provider_label": "Fournisseur",
+	"integrations_webhook_url_label": "URL du webhook",
+	"integrations_label_label": "Libellé (facultatif)",
+	"integrations_add_cta": "Ajouter une connexion",
+	"integrations_added": "Connexion ajoutée.",
+	"integrations_removed": "Connexion supprimée.",
+	"integrations_remove_cta": "Supprimer",
+	"integrations_test_cta": "Envoyer un test",
+	"integrations_test_sent": "Message de test envoyé.",
+	"integrations_test_failed": "Échec du message de test — vérifiez l'URL du webhook.",
+	"integrations_invalid_webhook_url": "Ceci n'est pas une URL de webhook valide pour ce fournisseur.",
+	"integrations_failing": "En échec depuis {date}",
+	"integrations_empty": "Aucune connexion pour le moment.",
+	"feed_title": "Flux de calendrier",
+	"feed_team_description": "Abonnez-vous à cette URL depuis Outlook, Google Agenda ou Apple Calendar pour voir les absences de cette équipe.",
+	"feed_user_description": "Abonnez-vous à cette URL depuis Outlook, Google Agenda ou Apple Calendar pour voir vos absences.",
+	"feed_copy_cta": "Copier",
+	"feed_copied": "URL du flux copiée.",
+	"feed_regenerate_cta": "Régénérer",
+	"feed_regenerated": "URL du flux régénérée. L'ancienne URL ne fonctionne plus."
 }

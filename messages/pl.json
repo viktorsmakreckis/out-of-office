@@ -297,5 +297,28 @@
 
 	"channel_message_created": "{emoji} {name} jest nieobecny(-a) {range} ({label})",
 	"channel_message_updated": "{emoji} {name} zmienił(a) swoją nieobecność: {range} ({label})",
-	"channel_message_test": "👋 Wiadomość testowa z Out of Office — ten kanał jest połączony."
+	"channel_message_test": "👋 Wiadomość testowa z Out of Office — ten kanał jest połączony.",
+
+	"integrations_title": "Integracje",
+	"integrations_description": "Publikuj nieobecności na kanałach swojego zespołu.",
+	"integrations_provider_label": "Dostawca",
+	"integrations_webhook_url_label": "Adres URL webhooka",
+	"integrations_label_label": "Etykieta (opcjonalnie)",
+	"integrations_add_cta": "Dodaj połączenie",
+	"integrations_added": "Połączenie dodane.",
+	"integrations_removed": "Połączenie usunięte.",
+	"integrations_remove_cta": "Usuń",
+	"integrations_test_cta": "Wyślij test",
+	"integrations_test_sent": "Wiadomość testowa wysłana.",
+	"integrations_test_failed": "Wiadomość testowa nie powiodła się — sprawdź adres webhooka.",
+	"integrations_invalid_webhook_url": "To nie jest prawidłowy adres webhooka dla wybranego dostawcy.",
+	"integrations_failing": "Niedziała od {date}",
+	"integrations_empty": "Brak połączeń.",
+	"feed_title": "Kanał kalendarza",
+	"feed_team_description": "Subskrybuj ten adres w Outlooku, Kalendarzu Google lub Apple Calendar, aby widzieć nieobecności tego zespołu.",
+	"feed_user_description": "Subskrybuj ten adres w Outlooku, Kalendarzu Google lub Apple Calendar, aby widzieć swoje nieobecności.",
+	"feed_copy_cta": "Kopiuj",
+	"feed_copied": "Adres kanału skopiowany.",
+	"feed_regenerate_cta": "Wygeneruj ponownie",
+	"feed_regenerated": "Adres kanału wygenerowany ponownie. Stary adres już nie działa."
 }

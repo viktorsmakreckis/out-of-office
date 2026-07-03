@@ -297,5 +297,28 @@
 
 	"channel_message_created": "{emoji} {name} is out {range} ({label})",
 	"channel_message_updated": "{emoji} {name} updated their time off: {range} ({label})",
-	"channel_message_test": "👋 Test message from Out of Office — this channel is connected."
+	"channel_message_test": "👋 Test message from Out of Office — this channel is connected.",
+
+	"integrations_title": "Integrations",
+	"integrations_description": "Post out-of-office updates to your team's channels.",
+	"integrations_provider_label": "Provider",
+	"integrations_webhook_url_label": "Webhook URL",
+	"integrations_label_label": "Label (optional)",
+	"integrations_add_cta": "Add connection",
+	"integrations_added": "Connection added.",
+	"integrations_removed": "Connection removed.",
+	"integrations_remove_cta": "Remove",
+	"integrations_test_cta": "Send test",
+	"integrations_test_sent": "Test message sent.",
+	"integrations_test_failed": "Test message failed — check the webhook URL.",
+	"integrations_invalid_webhook_url": "This is not a valid webhook URL for the selected provider.",
+	"integrations_failing": "Failing since {date}",
+	"integrations_empty": "No connections yet.",
+	"feed_title": "Calendar feed",
+	"feed_team_description": "Subscribe to this URL from Outlook, Google Calendar, or Apple Calendar to see this team's out-of-office events.",
+	"feed_user_description": "Subscribe to this URL from Outlook, Google Calendar, or Apple Calendar to see your out-of-office events.",
+	"feed_copy_cta": "Copy",
+	"feed_copied": "Feed URL copied.",
+	"feed_regenerate_cta": "Regenerate",
+	"feed_regenerated": "Feed URL regenerated. The old URL no longer works."
 }
