@@ -2,6 +2,8 @@ import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 import { describe, expect, it } from 'vitest';
 import {
 	formatDayHeading,
+	formatDateRange,
+	formatDateTimeRange,
 	formatHourLabel,
 	formatMonthLabel,
 	formatTime,
@@ -74,5 +76,40 @@ describe('formatHourLabel', () => {
 	it('formats a bare hour', () => {
 		expect(formatHourLabel(9, 'en')).toMatch(/9\sAM/);
 		expect(formatHourLabel(15, 'fr')).toContain('15');
+	});
+});
+
+describe('formatDateRange', () => {
+	it('collapses an equal start and end to a single date', () => {
+		expect(formatDateRange(jul2, jul2, 'en')).toBe('Jul 2');
+	});
+
+	it('formats a multi-day range with month and days', () => {
+		const label = formatDateRange(jul2, new CalendarDate(2026, 7, 7), 'en');
+		expect(label).toContain('2');
+		expect(label).toContain('7');
+		expect(label).toMatch(/Jul/);
+	});
+});
+
+describe('formatDateTimeRange', () => {
+	it('shows the date once for a same-day range', () => {
+		const label = formatDateTimeRange(
+			new CalendarDateTime(2026, 7, 2, 9, 0),
+			new CalendarDateTime(2026, 7, 2, 10, 30),
+			'en'
+		);
+		expect(label).toContain('9:00');
+		expect(label).toContain('10:30');
+		expect(label.match(/Jul/g)).toHaveLength(1);
+	});
+
+	it('shows both dates when the range crosses midnight', () => {
+		const label = formatDateTimeRange(
+			new CalendarDateTime(2026, 7, 2, 21, 0),
+			new CalendarDateTime(2026, 7, 3, 2, 0),
+			'en'
+		);
+		expect(label.match(/Jul/g)).toHaveLength(2);
 	});
 });

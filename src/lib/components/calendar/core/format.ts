@@ -57,3 +57,23 @@ export function formatTimeRange(
 export function formatHourLabel(hour: number, locale: string): string {
 	return formatter(locale, { hour: 'numeric' }).format(Date.UTC(2000, 0, 1, hour));
 }
+
+export function formatDateRange(start: CalendarDate, end: CalendarDate, locale: string): string {
+	return formatter(locale, { day: 'numeric', month: 'short' }).formatRange(
+		start.toDate('UTC'),
+		end.toDate('UTC')
+	);
+}
+
+export function formatDateTimeRange(
+	start: CalendarDateTime,
+	end: CalendarDateTime,
+	locale: string
+): string {
+	return formatter(locale, {
+		day: 'numeric',
+		month: 'short',
+		hour: 'numeric',
+		minute: '2-digit'
+	}).formatRange(start.toDate('UTC'), end.toDate('UTC'));
+}
