@@ -107,8 +107,10 @@
 								>
 									<Select.Trigger class="w-28">{roleLabels[teamMember.role]}</Select.Trigger>
 									<Select.Content>
-										<Select.Item value="member">{m.team_role_member()}</Select.Item>
-										<Select.Item value="admin">{m.team_role_admin()}</Select.Item>
+										<Select.Group>
+											<Select.Item value="member">{m.team_role_member()}</Select.Item>
+											<Select.Item value="admin">{m.team_role_admin()}</Select.Item>
+										</Select.Group>
 									</Select.Content>
 								</Select.Root>
 							</form>
@@ -174,8 +176,10 @@
 									{roleLabels[$inviteData.role] ?? m.team_role_member()}
 								</Select.Trigger>
 								<Select.Content>
-									<Select.Item value="member">{m.team_role_member()}</Select.Item>
-									<Select.Item value="admin">{m.team_role_admin()}</Select.Item>
+									<Select.Group>
+										<Select.Item value="member">{m.team_role_member()}</Select.Item>
+										<Select.Item value="admin">{m.team_role_admin()}</Select.Item>
+									</Select.Group>
 								</Select.Content>
 							</Select.Root>
 						</Field.Field>
@@ -220,14 +224,18 @@
 								name="targetType"
 								class="flex gap-4"
 							>
-								<Field.Label class="flex items-center gap-2 font-normal">
-									<RadioGroup.Item value="person" />
-									{m.share_target_person()}
-								</Field.Label>
-								<Field.Label class="flex items-center gap-2 font-normal">
-									<RadioGroup.Item value="team" />
-									{m.share_target_team()}
-								</Field.Label>
+								<Field.Field orientation="horizontal" class="w-fit">
+									<RadioGroup.Item id="share-person" value="person" />
+									<Field.Label for="share-person">
+										{m.share_target_person()}
+									</Field.Label>
+								</Field.Field>
+								<Field.Field orientation="horizontal" class="w-fit">
+									<RadioGroup.Item id="share-team" value="team" />
+									<Field.Label for="share-team">
+										{m.share_target_team()}
+									</Field.Label>
+								</Field.Field>
 							</RadioGroup.Root>
 						</Field.Field>
 						{#if $shareData.targetType === 'team'}
@@ -238,9 +246,11 @@
 										>{selectedTeamName}</Select.Trigger
 									>
 									<Select.Content>
-										{#each data.shareableTeams as team (team.id)}
-											<Select.Item value={team.id}>{team.name}</Select.Item>
-										{/each}
+										<Select.Group>
+											{#each data.shareableTeams as team (team.id)}
+												<Select.Item value={team.id}>{team.name}</Select.Item>
+											{/each}
+										</Select.Group>
 									</Select.Content>
 								</Select.Root>
 								<Field.Error errors={toFieldErrors($shareErrors.teamId)} />
@@ -294,44 +304,42 @@
 		<Card.Header><Card.Title>{m.team_settings_title()}</Card.Title></Card.Header>
 		<Card.Content class="grid gap-4">
 			{#if isOwner}
-				<form method="POST" action="?/rename" use:renameEnhance>
-					<Field.Group>
+				<div class="flex items-end gap-2">
+					<form id="rename-form" method="POST" action="?/rename" use:renameEnhance class="flex-1">
 						<Field.Field data-invalid={!!$renameErrors.name || undefined}>
 							<Field.Label for="rename-name">{m.team_name_label()}</Field.Label>
 							<Input id="rename-name" name="name" bind:value={$renameData.name} />
 							<Field.Error errors={toFieldErrors($renameErrors.name)} />
 						</Field.Field>
-						<div>
-							<Button type="submit" variant="outline" disabled={$renameSubmitting}>
-								{#if $renameSubmitting}<Spinner />{/if}
-								{m.team_rename_cta()}
-							</Button>
-						</div>
-					</Field.Group>
-				</form>
-				<AlertDialog.Root>
-					<AlertDialog.Trigger>
-						{#snippet child({ props })}
-							<Button {...props} variant="destructive" class="justify-self-start">
-								{m.team_delete_cta()}
-							</Button>
-						{/snippet}
-					</AlertDialog.Trigger>
-					<AlertDialog.Content>
-						<AlertDialog.Header>
-							<AlertDialog.Title>{m.team_delete_confirm_title()}</AlertDialog.Title>
-							<AlertDialog.Description
-								>{m.team_delete_confirm_description()}</AlertDialog.Description
-							>
-						</AlertDialog.Header>
-						<AlertDialog.Footer>
-							<AlertDialog.Cancel>{m.cancel()}</AlertDialog.Cancel>
-							<form method="POST" action="?/deleteTeam">
-								<Button type="submit" variant="destructive">{m.team_delete_cta()}</Button>
-							</form>
-						</AlertDialog.Footer>
-					</AlertDialog.Content>
-				</AlertDialog.Root>
+					</form>
+					<Button type="submit" form="rename-form" variant="outline" disabled={$renameSubmitting}>
+						{#if $renameSubmitting}<Spinner />{/if}
+						{m.team_rename_cta()}
+					</Button>
+					<AlertDialog.Root>
+						<AlertDialog.Trigger>
+							{#snippet child({ props })}
+								<Button {...props} variant="destructive">
+									{m.team_delete_cta()}
+								</Button>
+							{/snippet}
+						</AlertDialog.Trigger>
+						<AlertDialog.Content>
+							<AlertDialog.Header>
+								<AlertDialog.Title>{m.team_delete_confirm_title()}</AlertDialog.Title>
+								<AlertDialog.Description
+									>{m.team_delete_confirm_description()}</AlertDialog.Description
+								>
+							</AlertDialog.Header>
+							<AlertDialog.Footer>
+								<AlertDialog.Cancel>{m.cancel()}</AlertDialog.Cancel>
+								<form method="POST" action="?/deleteTeam">
+									<Button type="submit" variant="destructive">{m.team_delete_cta()}</Button>
+								</form>
+							</AlertDialog.Footer>
+						</AlertDialog.Content>
+					</AlertDialog.Root>
+				</div>
 			{:else}
 				<AlertDialog.Root>
 					<AlertDialog.Trigger>

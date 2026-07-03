@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import UsersIcon from '@lucide/svelte/icons/users';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
@@ -16,9 +17,14 @@
 
 	let { data } = $props();
 
+	let createOpen = $state(false);
+
 	// svelte-ignore state_referenced_locally
-	const { form, errors, constraints, submitting, enhance } = superForm(data.createForm, {
-		validators: zod4Client(createTeamSchema)
+	const { form, errors, constraints, submitting, enhance, reset } = superForm(data.createForm, {
+		validators: zod4Client(createTeamSchema),
+		onResult({ result }) {
+			if (result.type === 'redirect') createOpen = false;
+		}
 	});
 
 	const roleLabels: Record<string, string> = {
@@ -31,11 +37,56 @@
 <svelte:head><title>{m.teams_title()} · {m.app_name()}</title></svelte:head>
 
 <div class="mx-auto grid max-w-xl gap-6">
-	<h1 class="text-2xl font-semibold">{m.teams_title()}</h1>
+	<div class="flex items-center justify-between">
+		<h1 class="text-2xl font-semibold">{m.teams_title()}</h1>
+		<Dialog.Root
+			bind:open={createOpen}
+			onOpenChange={(isOpen) => {
+				if (isOpen) reset();
+			}}
+		>
+			<Dialog.Trigger>
+				{#snippet child({ props })}
+					<Button {...props}>{m.teams_create_cta()}</Button>
+				{/snippet}
+			</Dialog.Trigger>
+			<Dialog.Content>
+				<Dialog.Header>
+					<Dialog.Title>{m.teams_create_title()}</Dialog.Title>
+					<Dialog.Description>{m.teams_create_description()}</Dialog.Description>
+				</Dialog.Header>
+				<form method="POST" action="?/create" use:enhance>
+					<Field.Group>
+						<Field.Field data-invalid={!!$errors.name || undefined}>
+							<Field.Label for="team-name">{m.team_name_label()}</Field.Label>
+							<Input
+								id="team-name"
+								name="name"
+								bind:value={$form.name}
+								aria-invalid={$errors.name ? 'true' : undefined}
+								{...$constraints.name}
+							/>
+							<Field.Error errors={toFieldErrors($errors.name)} />
+						</Field.Field>
+						<div>
+							<Button type="submit" disabled={$submitting}>
+								{#if $submitting}<Spinner />{/if}
+								{m.teams_create_cta()}
+							</Button>
+						</div>
+					</Field.Group>
+				</form>
+			</Dialog.Content>
+		</Dialog.Root>
+	</div>
 
 	{#if data.teams.length === 0}
 		<Empty.Root>
-			<Empty.Title>{m.teams_empty()}</Empty.Title>
+			<Empty.Header>
+				<Empty.Media variant="icon"><UsersIcon /></Empty.Media>
+				<Empty.Title>{m.teams_empty()}</Empty.Title>
+				<Empty.Description>{m.teams_create_description()}</Empty.Description>
+			</Empty.Header>
 		</Empty.Root>
 	{:else}
 		<div class="grid gap-2">
@@ -55,34 +106,4 @@
 			{/each}
 		</div>
 	{/if}
-
-	<Card.Root>
-		<Card.Header>
-			<Card.Title>{m.teams_create_title()}</Card.Title>
-			<Card.Description>{m.teams_create_description()}</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<form method="POST" action="?/create" use:enhance>
-				<Field.Group>
-					<Field.Field data-invalid={!!$errors.name || undefined}>
-						<Field.Label for="team-name">{m.team_name_label()}</Field.Label>
-						<Input
-							id="team-name"
-							name="name"
-							bind:value={$form.name}
-							aria-invalid={$errors.name ? 'true' : undefined}
-							{...$constraints.name}
-						/>
-						<Field.Error errors={toFieldErrors($errors.name)} />
-					</Field.Field>
-					<div>
-						<Button type="submit" disabled={$submitting}>
-							{#if $submitting}<Spinner />{/if}
-							{m.teams_create_cta()}
-						</Button>
-					</div>
-				</Field.Group>
-			</form>
-		</Card.Content>
-	</Card.Root>
 </div>

@@ -42,15 +42,19 @@
 				<Field.Group>
 					<Field.Field>
 						<Field.Label>{m.share_target_label()}</Field.Label>
-						<RadioGroup.Root bind:value={$form.targetType} name="targetType" class="flex gap-4">
-							<Field.Label class="flex items-center gap-2 font-normal">
-								<RadioGroup.Item value="person" />
-								{m.share_target_person()}
-							</Field.Label>
-							<Field.Label class="flex items-center gap-2 font-normal">
-								<RadioGroup.Item value="team" />
-								{m.share_target_team()}
-							</Field.Label>
+						<RadioGroup.Root bind:value={$form.targetType} name="targetType" class="flex gap-6">
+							<Field.Field orientation="horizontal" class="w-fit">
+								<RadioGroup.Item id="share-person" value="person" />
+								<Field.Label for="share-person">
+									{m.share_target_person()}
+								</Field.Label>
+							</Field.Field>
+							<Field.Field orientation="horizontal" class="w-fit">
+								<RadioGroup.Item id="share-team" value="team" />
+								<Field.Label for="share-team">
+									{m.share_target_team()}
+								</Field.Label>
+							</Field.Field>
 						</RadioGroup.Root>
 					</Field.Field>
 					{#if $form.targetType === 'team'}
@@ -59,9 +63,11 @@
 							<Select.Root type="single" name="teamId" bind:value={$form.teamId}>
 								<Select.Trigger id="share-team" class="w-full">{selectedTeamName}</Select.Trigger>
 								<Select.Content>
-									{#each data.allTeams as team (team.id)}
-										<Select.Item value={team.id}>{team.name}</Select.Item>
-									{/each}
+									<Select.Group>
+										{#each data.allTeams as team (team.id)}
+											<Select.Item value={team.id}>{team.name}</Select.Item>
+										{/each}
+									</Select.Group>
 								</Select.Content>
 							</Select.Root>
 							<Field.Error errors={toFieldErrors($errors.teamId)} />
