@@ -1,0 +1,1039 @@
+# Async Notification Delivery Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Move event-change email + webhook notification delivery off the request path onto a BullMQ/Redis queue, and bring event deletes to full notification parity.
+
+**Architecture:** Calendar actions keep the fast local-Postgres work in-band (resolve audience, insert in-app `notification` rows) and enqueue a delivery job carrying the resolved recipients; an in-process BullMQ worker (started from `hooks.server.ts`) runs the slow external delivery (Resend emails + team webhook POSTs) via a new `deliverEventChange`. Delivery stays best-effort; the queue adds crash durability and removes request latency.
+
+**Tech Stack:** SvelteKit (adapter-node), TypeScript, Drizzle + Postgres, BullMQ + ioredis (new), paraglide i18n, Resend, Vitest.
+
+## Global Constraints
+
+- **Queue = BullMQ + Redis; worker runs in-process** inside the SvelteKit node server (guarded singleton). `$env`/`$lib` resolve normally because it runs inside the server build.
+- **In-app `notification` inserts stay in-band.** Only emails and webhook POSTs move to the worker.
+- **Delivery is best-effort** — individual email/webhook failures are caught and logged, never thrown. No per-recipient retry or idempotency in v1.
+- **Scope = event-change notifications only** (`created`/`updated`/`deleted`). `notifyShareCreated` and its `notifyRecipients` helper stay fully in-band, untouched.
+- **i18n covers all four locales**, base locale is `en-GB`: `en-GB`, `en-US`, `pl`, `fr`. After editing `messages/*.json`, recompile paraglide (`pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`) and commit the regenerated `src/lib/paraglide/messages/*` output.
+- **Tests run in the `node` environment** with `expect: { requireAssertions: true }` — every test body must contain at least one assertion.
+- **Commits use conventional-commit prefixes** (`feat:` / `docs:`) and **must NOT include a `Co-Authored-By` trailer** (repo convention).
+- Dev DB must be running for migration/manual steps: `pnpm db:start` (docker compose, now includes Redis).
+
+## File Structure
+
+**New files**
+- `src/lib/server/queue/job.ts` — job types + `QUEUE_NAME` + pure `Date↔ISO` (de)serialization. No BullMQ import (keeps it unit-testable).
+- `src/lib/server/queue/job.spec.ts` — serialization round-trip test.
+- `src/lib/server/queue/connection.ts` — lazy shared ioredis connection from `REDIS_URL` (returns `null` when unset).
+- `src/lib/server/queue/index.ts` — lazy `Queue` singleton + `enqueueEventDelivery`.
+- `src/lib/server/queue/index.spec.ts` — enqueue no-ops without Redis.
+- `src/lib/server/queue/worker.ts` — `startNotificationWorker()` + processor.
+- `src/lib/server/notifications.spec.ts` — `deliverEventChange` best-effort + `eventNotificationType` mapping.
+- `src/lib/notifications.spec.ts` — `toAppNotification` handles `event_deleted`.
+
+**Modified files**
+- `src/lib/server/db/schema.ts` — add `event_deleted` to `notificationTypeEnum` (+ generated migration).
+- `src/lib/notifications.ts` — read-side union + `toAppNotification` case for `event_deleted`.
+- `src/routes/app/notifications/+page.svelte` — render case for `event_deleted`.
+- `src/lib/server/email.ts` — `eventChangeEmail` handles `deleted`.
+- `src/lib/server/integrations/message.ts` — `OooMessage`/`buildEventMessage`/`composeLine` handle `deleted`.
+- `src/lib/server/integrations/webhooks.ts` — `ChannelEvent.kind` widened.
+- `src/lib/server/notifications.ts` — split into in-band `notifyEventChange` (audience + insert + enqueue) and worker-side `deliverEventChange`.
+- `src/hooks.server.ts` — start the worker at boot.
+- `src/routes/app/calendar/+page.server.ts` — `delete` action notifies (`deleted`).
+- `messages/{en-GB,en-US,pl,fr}.json` — new keys.
+- `compose.yaml`, `.env.example`, `package.json` — Redis service, env var, deps.
+
+---
+
+### Task 1: `event_deleted` notification type (enum + migration + read-side + i18n)
+
+Adds the new notification type end-to-end on the storage/display side, so later tasks can write and render it.
+
+**Files:**
+- Modify: `src/lib/server/db/schema.ts:122-127` (enum), `src/lib/notifications.ts:14-18,54-63` (union + mapper)
+- Modify: `src/routes/app/notifications/+page.svelte:23-27` (render case)
+- Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
+- Create: `src/lib/notifications.spec.ts`
+
+**Interfaces:**
+- Produces: `notificationTypeEnum` includes `'event_deleted'`; `AppNotification` union includes `{ type: 'event_deleted'; data: { eventTitle: string | null; eventType: string } }`; message key `notification_event_deleted`.
+
+- [ ] **Step 1: Write the failing test** — `src/lib/notifications.spec.ts`
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { toAppNotification } from './notifications';
+
+describe('toAppNotification', () => {
+	it('maps an event_deleted row to the discriminated view', () => {
+		const row = {
+			id: 'n1',
+			actorName: 'Alice',
+			readAt: null,
+			createdAt: new Date('2026-07-03T00:00:00Z'),
+			type: 'event_deleted',
+			data: { eventTitle: 'Trip', eventType: 'vacation' }
+		};
+		const result = toAppNotification(row);
+		expect(result.type).toBe('event_deleted');
+		expect(result.data).toEqual({ eventTitle: 'Trip', eventType: 'vacation' });
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run src/lib/notifications.spec.ts`
+Expected: FAIL — `toAppNotification` returns `type: 'event_updated'` for the unknown `event_deleted` (default branch), so `expect(result.type).toBe('event_deleted')` fails.
+
+- [ ] **Step 3: Extend the read-side union and mapper** — `src/lib/notifications.ts`
+
+Change the union arm (around line 14-18) from:
+
+```ts
+		| {
+				type: 'event_created' | 'event_updated';
+				data: { eventTitle: string | null; eventType: string };
+		  }
+```
+
+to:
+
+```ts
+		| {
+				type: 'event_created' | 'event_updated' | 'event_deleted';
+				data: { eventTitle: string | null; eventType: string };
+		  }
+```
+
+And change the `case` list (around line 54-55) from:
+
+```ts
+			case 'event_created':
+			case 'event_updated':
+```
+
+to:
+
+```ts
+			case 'event_created':
+			case 'event_updated':
+			case 'event_deleted':
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm exec vitest run src/lib/notifications.spec.ts`
+Expected: PASS
+
+- [ ] **Step 5: Add the enum value** — `src/lib/server/db/schema.ts`
+
+Change (around line 122-127):
+
+```ts
+export const notificationTypeEnum = pgEnum('notification_type', [
+	'team_invite',
+	'calendar_shared',
+	'event_created',
+	'event_updated',
+	'event_deleted'
+]);
+```
+
+- [ ] **Step 6: Generate and apply the migration**
+
+Run: `pnpm db:generate`
+Expected: a new file under `drizzle/` containing `ALTER TYPE "public"."notification_type" ADD VALUE 'event_deleted';`
+
+Run (dev Postgres must be up — `pnpm db:start` in another terminal): `pnpm db:migrate`
+Expected: migration applied, no error. (Postgres 12+ allows `ADD VALUE` in a transaction as long as the value isn't used in the same transaction — this migration only adds it.)
+
+- [ ] **Step 7: Add the `notification_event_deleted` message to all four locales**
+
+In `messages/en-GB.json` and `messages/en-US.json`, after the `"notification_event_updated"` line add:
+
+```json
+	"notification_event_deleted": "{name} deleted an event",
+```
+
+In `messages/fr.json`, after `"notification_event_updated"` add:
+
+```json
+	"notification_event_deleted": "{name} a supprimé un événement",
+```
+
+In `messages/pl.json`, after `"notification_event_updated"` add:
+
+```json
+	"notification_event_deleted": "{name} usuwa wydarzenie",
+```
+
+- [ ] **Step 8: Render the new type** — `src/routes/app/notifications/+page.svelte`
+
+In the `text()` switch (around line 23-27), add after the `event_updated` case:
+
+```ts
+			case 'event_deleted':
+				return m.notification_event_deleted({ name: entry.actorName });
+```
+
+- [ ] **Step 9: Recompile paraglide and typecheck**
+
+Run: `pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`
+Run: `pnpm check`
+Expected: no type errors (the `text()` switch is now exhaustive over the widened union).
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add src/lib/server/db/schema.ts drizzle/ src/lib/notifications.ts src/lib/notifications.spec.ts src/routes/app/notifications/+page.svelte messages/ src/lib/paraglide/
+git commit -m "feat: add event_deleted notification type"
+```
+
+---
+
+### Task 2: `deleted` variant of the event-change email
+
+**Files:**
+- Modify: `src/lib/server/email.ts:98-116`
+- Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
+- Test: `src/lib/server/email.spec.ts:57-75`
+
+**Interfaces:**
+- Consumes: message key `email_event_deleted_subject`.
+- Produces: `eventChangeEmail(actorName, eventLabel, kind: 'created' | 'updated' | 'deleted', url, locale)`.
+
+- [ ] **Step 1: Write the failing test** — append to the `describe('sharing emails', …)` block in `src/lib/server/email.spec.ts`
+
+```ts
+	it('eventChangeEmail localizes the deleted subject', () => {
+		const deleted = eventChangeEmail('Alice', 'Vacation', 'deleted', 'https://x/app/calendar', 'en-GB');
+		expect(deleted.subject).toContain('deleted');
+		expect(deleted.text).toContain('Vacation');
+	});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run src/lib/server/email.spec.ts`
+Expected: FAIL — TypeScript rejects `'deleted'` for the `kind` parameter (or at runtime the subject falls through to the `updated` branch).
+
+- [ ] **Step 3: Add the message to all four locales**
+
+`messages/en-GB.json` and `messages/en-US.json`, after `"email_event_updated_subject"`:
+
+```json
+	"email_event_deleted_subject": "{name} deleted an event",
+```
+
+`messages/fr.json`, after `"email_event_updated_subject"`:
+
+```json
+	"email_event_deleted_subject": "{name} a supprimé un événement",
+```
+
+`messages/pl.json`, after `"email_event_updated_subject"`:
+
+```json
+	"email_event_deleted_subject": "{name} usuwa wydarzenie",
+```
+
+Then recompile paraglide: `pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`
+
+- [ ] **Step 4: Widen `eventChangeEmail`** — `src/lib/server/email.ts`
+
+Replace the function body (lines 98-116) with:
+
+```ts
+export function eventChangeEmail(
+	actorName: string,
+	eventLabel: string,
+	kind: 'created' | 'updated' | 'deleted',
+	url: string,
+	locale: Locale
+): EmailContent {
+	const o = { locale };
+	const subject =
+		kind === 'created'
+			? m.email_event_created_subject({ name: actorName }, o)
+			: kind === 'updated'
+				? m.email_event_updated_subject({ name: actorName }, o)
+				: m.email_event_deleted_subject({ name: actorName }, o);
+	return actionEmail(
+		subject,
+		m.email_event_change_body({ name: actorName, title: eventLabel }, o),
+		m.email_event_change_cta({}, o),
+		url
+	);
+}
+```
+
+(The `email_event_change_body` copy — "{name} changed …" — is reused for all three kinds; no new body key.)
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `pnpm exec vitest run src/lib/server/email.spec.ts`
+Expected: PASS
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/lib/server/email.ts src/lib/server/email.spec.ts messages/ src/lib/paraglide/
+git commit -m "feat: add deleted variant to event-change email"
+```
+
+---
+
+### Task 3: `deleted` variant of the channel (webhook) message
+
+**Files:**
+- Modify: `src/lib/server/integrations/message.ts:10-17,68-84,90-103`
+- Modify: `src/lib/server/integrations/webhooks.ts:13-20`
+- Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
+- Test: `src/lib/server/integrations/message.spec.ts:62-88`
+
+**Interfaces:**
+- Consumes: message key `channel_message_deleted`.
+- Produces: `OooMessage.kind` and `ChannelEvent.kind` include `'deleted'`; `buildEventMessage(actorName, kind: 'created' | 'updated' | 'deleted', …)`.
+
+- [ ] **Step 1: Write the failing test** — append to the `describe('composeLine', …)` block in `src/lib/server/integrations/message.spec.ts`
+
+```ts
+	it('renders the deleted template', () => {
+		const message = buildEventMessage('Alice', 'deleted', null, 'vacation', range, 'en-GB');
+		const line = composeLine(message, (s) => `*${s}*`);
+		expect(line).toContain('*Alice*');
+		expect(line).toContain('cancelled');
+	});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run src/lib/server/integrations/message.spec.ts`
+Expected: FAIL — `'deleted'` is not assignable to `buildEventMessage`'s `kind`, and `composeLine` has no deleted branch.
+
+- [ ] **Step 3: Add the message to all four locales**
+
+`messages/en-GB.json`, after `"channel_message_updated"`:
+
+```json
+	"channel_message_deleted": "{emoji} {name} cancelled their time off: {range} ({label})",
+```
+
+`messages/en-US.json`, after `"channel_message_updated"`:
+
+```json
+	"channel_message_deleted": "{emoji} {name} canceled their time off: {range} ({label})",
+```
+
+`messages/fr.json`, after `"channel_message_updated"`:
+
+```json
+	"channel_message_deleted": "{emoji} {name} a annulé son absence : {range} ({label})",
+```
+
+`messages/pl.json`, after `"channel_message_updated"`:
+
+```json
+	"channel_message_deleted": "{emoji} {name} odwołał(a) swoją nieobecność: {range} ({label})",
+```
+
+Then recompile paraglide: `pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`
+
+- [ ] **Step 4: Widen the message types** — `src/lib/server/integrations/message.ts`
+
+`OooMessage.kind` (line 15) → `kind: 'created' | 'updated' | 'deleted' | 'test';`
+
+`buildEventMessage` signature (line 69) → `kind: 'created' | 'updated' | 'deleted',`
+
+Replace `composeLine`'s final return (lines 100-102) with:
+
+```ts
+	if (message.kind === 'created') return m.channel_message_created(params, { locale });
+	if (message.kind === 'updated') return m.channel_message_updated(params, { locale });
+	return m.channel_message_deleted(params, { locale });
+```
+
+(The `if (message.kind === 'test')` guard on line 93 stays above this.)
+
+- [ ] **Step 5: Widen `ChannelEvent.kind`** — `src/lib/server/integrations/webhooks.ts`
+
+Line 16: `kind: 'created' | 'updated' | 'deleted';`
+
+- [ ] **Step 6: Run test + typecheck**
+
+Run: `pnpm exec vitest run src/lib/server/integrations/message.spec.ts`
+Expected: PASS
+Run: `pnpm check`
+Expected: no type errors.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/lib/server/integrations/message.ts src/lib/server/integrations/webhooks.ts src/lib/server/integrations/message.spec.ts messages/ src/lib/paraglide/
+git commit -m "feat: add deleted variant to channel message"
+```
+
+---
+
+### Task 4: Queue job contract + serialization
+
+Pure module: types, queue name, and `Date↔ISO` conversion. No BullMQ import so it stays unit-testable in isolation.
+
+**Files:**
+- Create: `src/lib/server/queue/job.ts`
+- Create: `src/lib/server/queue/job.spec.ts`
+
+**Interfaces:**
+- Produces:
+  - `QUEUE_NAME = 'notifications'`
+  - `type EventDeliveryPayload = { actorId: string; actorName: string; kind: 'created' | 'updated' | 'deleted'; title: string | null; type: string; range: { allDay: boolean; start: Date; end: Date }; emailRecipients: Array<{ email: string; locale: string }> }`
+  - `type EventDeliveryJobData` (same but `range.start`/`range.end` are `string`)
+  - `toEventDeliveryJob(p: EventDeliveryPayload): EventDeliveryJobData`
+  - `fromEventDeliveryJob(d: EventDeliveryJobData): EventDeliveryPayload`
+
+- [ ] **Step 1: Write the failing test** — `src/lib/server/queue/job.spec.ts`
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { fromEventDeliveryJob, toEventDeliveryJob, type EventDeliveryPayload } from './job';
+
+const payload: EventDeliveryPayload = {
+	actorId: 'u1',
+	actorName: 'Alice',
+	kind: 'deleted',
+	title: 'Trip',
+	type: 'vacation',
+	range: {
+		allDay: true,
+		start: new Date('2026-07-06T00:00:00Z'),
+		end: new Date('2026-07-08T00:00:00Z')
+	},
+	emailRecipients: [{ email: 'bob@x.test', locale: 'fr' }]
+};
+
+describe('event delivery job serialization', () => {
+	it('serializes range dates to ISO strings', () => {
+		const data = toEventDeliveryJob(payload);
+		expect(data.range.start).toBe('2026-07-06T00:00:00.000Z');
+		expect(data.range.end).toBe('2026-07-08T00:00:00.000Z');
+		expect(data.emailRecipients).toEqual([{ email: 'bob@x.test', locale: 'fr' }]);
+	});
+
+	it('round-trips back to Date instances', () => {
+		const restored = fromEventDeliveryJob(toEventDeliveryJob(payload));
+		expect(restored.range.start).toBeInstanceOf(Date);
+		expect(restored.range.start.toISOString()).toBe(payload.range.start.toISOString());
+		expect(restored).toEqual(payload);
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run src/lib/server/queue/job.spec.ts`
+Expected: FAIL — `Cannot find module './job'`.
+
+- [ ] **Step 3: Implement** — `src/lib/server/queue/job.ts`
+
+```ts
+export const QUEUE_NAME = 'notifications';
+
+export type EventDeliveryPayload = {
+	actorId: string;
+	actorName: string;
+	kind: 'created' | 'updated' | 'deleted';
+	title: string | null;
+	type: string;
+	range: { allDay: boolean; start: Date; end: Date };
+	emailRecipients: Array<{ email: string; locale: string }>;
+};
+
+export type EventDeliveryJobData = {
+	actorId: string;
+	actorName: string;
+	kind: 'created' | 'updated' | 'deleted';
+	title: string | null;
+	type: string;
+	range: { allDay: boolean; start: string; end: string };
+	emailRecipients: Array<{ email: string; locale: string }>;
+};
+
+/** Dates don't survive JSON — flatten to ISO on the way into the queue. */
+export function toEventDeliveryJob(p: EventDeliveryPayload): EventDeliveryJobData {
+	return {
+		...p,
+		range: {
+			allDay: p.range.allDay,
+			start: p.range.start.toISOString(),
+			end: p.range.end.toISOString()
+		}
+	};
+}
+
+/** Rehydrate ISO strings back to Dates on the way out of the queue. */
+export function fromEventDeliveryJob(d: EventDeliveryJobData): EventDeliveryPayload {
+	return {
+		...d,
+		range: {
+			allDay: d.range.allDay,
+			start: new Date(d.range.start),
+			end: new Date(d.range.end)
+		}
+	};
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pnpm exec vitest run src/lib/server/queue/job.spec.ts`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/lib/server/queue/job.ts src/lib/server/queue/job.spec.ts
+git commit -m "feat: add event delivery job contract"
+```
+
+---
+
+### Task 5: Redis connection + queue producer + infra config
+
+**Files:**
+- Create: `src/lib/server/queue/connection.ts`, `src/lib/server/queue/index.ts`, `src/lib/server/queue/index.spec.ts`
+- Modify: `package.json` (deps), `.env.example`, `compose.yaml`
+
+**Interfaces:**
+- Consumes: `QUEUE_NAME`, `EventDeliveryJobData`, `EventDeliveryPayload`, `toEventDeliveryJob` from `./job`.
+- Produces:
+  - `getRedisConnection(): IORedis | null` (`./connection`)
+  - `enqueueEventDelivery(payload: EventDeliveryPayload): Promise<void>` (`./index`) — no-op when Redis is not configured.
+
+- [ ] **Step 1: Add dependencies**
+
+Run: `pnpm add -D bullmq ioredis`
+(Server runtime libs live in `devDependencies` here — matching `resend`/`postgres`/`better-auth`, which adapter-node bundles.)
+Expected: `package.json` gains `bullmq` and `ioredis`.
+
+- [ ] **Step 2: Write the failing test** — `src/lib/server/queue/index.spec.ts`
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { enqueueEventDelivery } from './index';
+import type { EventDeliveryPayload } from './job';
+
+const payload: EventDeliveryPayload = {
+	actorId: 'u1',
+	actorName: 'Alice',
+	kind: 'created',
+	title: null,
+	type: 'vacation',
+	range: { allDay: true, start: new Date(), end: new Date() },
+	emailRecipients: []
+};
+
+describe('enqueueEventDelivery', () => {
+	it('is a no-op that resolves when REDIS_URL is not configured', async () => {
+		// No REDIS_URL in the test env → getQueue() returns null → resolves without throwing.
+		await expect(enqueueEventDelivery(payload)).resolves.toBeUndefined();
+	});
+});
+```
+
+- [ ] **Step 3: Run test to verify it fails**
+
+Run: `pnpm exec vitest run src/lib/server/queue/index.spec.ts`
+Expected: FAIL — `Cannot find module './index'`.
+
+- [ ] **Step 4: Implement the connection** — `src/lib/server/queue/connection.ts`
+
+```ts
+import IORedis from 'ioredis';
+import { env } from '$env/dynamic/private';
+
+let connection: IORedis | null | undefined;
+
+/**
+ * Single lazily-created Redis connection shared by the queue and the worker.
+ * Returns null when REDIS_URL is unset (dev without Redis, tests, the
+ * better-auth CLI) so importing the module never opens a socket.
+ * `maxRetriesPerRequest: null` is required by BullMQ's blocking commands.
+ */
+export function getRedisConnection(): IORedis | null {
+	if (connection !== undefined) return connection;
+	connection = env.REDIS_URL ? new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null }) : null;
+	return connection;
+}
+```
+
+- [ ] **Step 5: Implement the producer** — `src/lib/server/queue/index.ts`
+
+```ts
+import { Queue } from 'bullmq';
+import { getRedisConnection } from './connection';
+import { QUEUE_NAME, toEventDeliveryJob, type EventDeliveryJobData, type EventDeliveryPayload } from './job';
+
+let queue: Queue<EventDeliveryJobData> | null | undefined;
+
+function getQueue(): Queue<EventDeliveryJobData> | null {
+	if (queue !== undefined) return queue;
+	const connection = getRedisConnection();
+	queue = connection ? new Queue<EventDeliveryJobData>(QUEUE_NAME, { connection }) : null;
+	return queue;
+}
+
+/**
+ * Enqueue the external delivery of an event change. Best-effort: when Redis is
+ * not configured this is a no-op (delivery is skipped, same posture as a
+ * swallowed email failure). Callers already run this inside a try/catch.
+ */
+export async function enqueueEventDelivery(payload: EventDeliveryPayload): Promise<void> {
+	const q = getQueue();
+	if (!q) return;
+	await q.add('event-delivery', toEventDeliveryJob(payload), {
+		attempts: 3,
+		backoff: { type: 'exponential', delay: 2000 },
+		removeOnComplete: 100,
+		removeOnFail: 500
+	});
+}
+```
+
+- [ ] **Step 6: Run test to verify it passes**
+
+Run: `pnpm exec vitest run src/lib/server/queue/index.spec.ts`
+Expected: PASS (importing `bullmq` is fine — no connection is opened because `getRedisConnection()` returns null).
+
+- [ ] **Step 7: Add `REDIS_URL` to `.env.example`**
+
+Append after the Resend block:
+
+```
+# BullMQ / Redis (async notification delivery)
+REDIS_URL="redis://localhost:6379"
+```
+
+- [ ] **Step 8: Add a Redis service to `compose.yaml`**
+
+```yaml
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: local
+    volumes:
+      - pgdata:/var/lib/postgresql
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - 6379:6379
+volumes:
+  pgdata:
+```
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/lib/server/queue/connection.ts src/lib/server/queue/index.ts src/lib/server/queue/index.spec.ts package.json pnpm-lock.yaml .env.example compose.yaml
+git commit -m "feat: add redis-backed notification queue producer"
+```
+
+---
+
+### Task 6: Split notification fan-out — in-band insert + enqueue, worker-side delivery
+
+Refactors `notifyEventChange` to do only the in-band work and enqueue; adds `deliverEventChange` (the worker's job body) and the pure `eventNotificationType` mapper. Extends both to `deleted`.
+
+**Files:**
+- Modify: `src/lib/server/notifications.ts:1-22,89-111`
+- Create: `src/lib/server/notifications.spec.ts`
+
+**Interfaces:**
+- Consumes: `enqueueEventDelivery` (`$lib/server/queue`), `EventDeliveryPayload` (`$lib/server/queue/job`), existing `getEventAudience`, `sendEmail`, `eventChangeEmail`, `postEventToTeamChannels`.
+- Produces:
+  - `notifyEventChange(actor: { id: string; name: string }, kind: 'created' | 'updated' | 'deleted', eventTitle: string | null, eventType: string, range: { allDay: boolean; start: Date; end: Date }): Promise<void>` — in-band audience + insert + enqueue.
+  - `deliverEventChange(payload: EventDeliveryPayload): Promise<void>` — worker-side emails + channels.
+  - `eventNotificationType(kind: 'created' | 'updated' | 'deleted'): 'event_created' | 'event_updated' | 'event_deleted'`.
+
+- [ ] **Step 1: Write the failing tests** — `src/lib/server/notifications.spec.ts`
+
+```ts
+import { describe, expect, it, vi } from 'vitest';
+
+// Mock via the same `$lib` specifiers notifications.ts imports, so Vitest
+// intercepts the exact module instances the code under test uses.
+vi.mock('$lib/server/email', () => ({
+	sendEmail: vi.fn(),
+	eventChangeEmail: vi.fn(() => ({ subject: 's', html: 'h', text: 't' }))
+}));
+vi.mock('$lib/server/integrations/webhooks', () => ({
+	postEventToTeamChannels: vi.fn(async () => {})
+}));
+
+import { sendEmail } from '$lib/server/email';
+import { postEventToTeamChannels } from '$lib/server/integrations/webhooks';
+import { deliverEventChange, eventNotificationType } from './notifications';
+import type { EventDeliveryPayload } from './queue/job';
+
+const payload: EventDeliveryPayload = {
+	actorId: 'u1',
+	actorName: 'Alice',
+	kind: 'deleted',
+	title: 'Trip',
+	type: 'vacation',
+	range: { allDay: true, start: new Date(), end: new Date() },
+	emailRecipients: [
+		{ email: 'a@x.test', locale: 'en-GB' },
+		{ email: 'b@x.test', locale: 'fr' }
+	]
+};
+
+describe('eventNotificationType', () => {
+	it('maps kind to notification type', () => {
+		expect(eventNotificationType('created')).toBe('event_created');
+		expect(eventNotificationType('updated')).toBe('event_updated');
+		expect(eventNotificationType('deleted')).toBe('event_deleted');
+	});
+});
+
+describe('deliverEventChange', () => {
+	it('is best-effort: a rejected email does not stop channel delivery', async () => {
+		vi.mocked(sendEmail)
+			.mockRejectedValueOnce(new Error('resend down'))
+			.mockResolvedValueOnce(undefined);
+		await expect(deliverEventChange(payload)).resolves.toBeUndefined();
+		expect(sendEmail).toHaveBeenCalledTimes(2);
+		expect(postEventToTeamChannels).toHaveBeenCalledWith('u1', expect.objectContaining({ kind: 'deleted' }));
+	});
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `pnpm exec vitest run src/lib/server/notifications.spec.ts`
+Expected: FAIL — `deliverEventChange` and `eventNotificationType` are not exported.
+
+- [ ] **Step 3: Update imports** — `src/lib/server/notifications.ts`
+
+Add `type EventChangeData` to the schema import (line 6-12) and add the queue imports. After the existing import block (after line 20), the relevant imports should read:
+
+```ts
+import {
+	member,
+	notification,
+	organization,
+	user,
+	type EventChangeData,
+	type NotificationData
+} from '$lib/server/db/schema';
+import {
+	calendarSharedEmail,
+	eventChangeEmail,
+	sendEmail,
+	type EmailContent
+} from '$lib/server/email';
+import { postEventToTeamChannels } from '$lib/server/integrations/webhooks';
+import { enqueueEventDelivery } from '$lib/server/queue';
+import type { EventDeliveryPayload } from '$lib/server/queue/job';
+import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } from './sharing';
+```
+
+Change the `NotificationType` alias (line 22) to include the deleted type:
+
+```ts
+type NotificationType = 'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated' | 'event_deleted';
+```
+
+Widen `recipientLocale` (line 44-46) to accept anything with a `locale`, so it works for both `Recipient` and the job's `emailRecipients`:
+
+```ts
+function recipientLocale(recipient: { locale: string }) {
+	return isLocale(recipient.locale) ? recipient.locale : baseLocale;
+}
+```
+
+- [ ] **Step 4: Replace `notifyEventChange` with the split** — `src/lib/server/notifications.ts`
+
+Replace the whole `notifyEventChange` function (lines 89-111) with:
+
+```ts
+/** created/updated/deleted → the stored notification type. */
+export function eventNotificationType(
+	kind: 'created' | 'updated' | 'deleted'
+): 'event_created' | 'event_updated' | 'event_deleted' {
+	return kind === 'created' ? 'event_created' : kind === 'updated' ? 'event_updated' : 'event_deleted';
+}
+
+/**
+ * In-band: resolves the audience, writes the in-app notification rows (fast,
+ * local Postgres), then enqueues the slow external delivery (emails + webhooks)
+ * with the resolved recipients so the emailed audience matches the in-app one.
+ */
+export async function notifyEventChange(
+	actor: { id: string; name: string },
+	kind: 'created' | 'updated' | 'deleted',
+	eventTitle: string | null,
+	eventType: string,
+	range: { allDay: boolean; start: Date; end: Date }
+): Promise<void> {
+	const recipients = await getEventAudience(actor.id);
+	if (recipients.length > 0) {
+		await db.insert(notification).values(
+			recipients.map((recipient) => ({
+				userId: recipient.id,
+				type: eventNotificationType(kind),
+				actorName: actor.name,
+				data: { eventTitle, eventType } satisfies EventChangeData
+			}))
+		);
+	}
+	await enqueueEventDelivery({
+		actorId: actor.id,
+		actorName: actor.name,
+		kind,
+		title: eventTitle,
+		type: eventType,
+		range,
+		emailRecipients: recipients.map((recipient) => ({
+			email: recipient.email,
+			locale: recipient.locale
+		}))
+	});
+}
+
+/**
+ * Worker-side: the external delivery for one event change. Best-effort —
+ * individual email failures are logged, never thrown; webhook posts run after.
+ */
+export async function deliverEventChange(payload: EventDeliveryPayload): Promise<void> {
+	const results = await Promise.allSettled(
+		payload.emailRecipients.map((recipient) => {
+			const locale = recipientLocale(recipient);
+			const label = payload.title ?? eventTypeLabelFor(payload.type, locale);
+			return sendEmail(
+				recipient.email,
+				eventChangeEmail(payload.actorName, label, payload.kind, `${env.ORIGIN}/app/calendar`, locale)
+			);
+		})
+	);
+	for (const result of results) {
+		if (result.status === 'rejected') console.error('[notifications] email failed:', result.reason);
+	}
+	await postEventToTeamChannels(payload.actorId, {
+		actorName: payload.actorName,
+		kind: payload.kind,
+		title: payload.title,
+		type: payload.type,
+		range: payload.range
+	});
+}
+```
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `pnpm exec vitest run src/lib/server/notifications.spec.ts`
+Expected: PASS
+
+- [ ] **Step 6: Full typecheck**
+
+Run: `pnpm check`
+Expected: no errors. (`save`/`move` actions still call `notifyEventChange` with the same signature; only its internals changed.)
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/lib/server/notifications.ts src/lib/server/notifications.spec.ts
+git commit -m "feat: enqueue external notification delivery, keep inserts in-band"
+```
+
+---
+
+### Task 7: In-process worker + server startup
+
+Glue with no unit test (BullMQ `Worker` needs a live broker); verified by typecheck here and end-to-end in Task 9.
+
+**Files:**
+- Create: `src/lib/server/queue/worker.ts`
+- Modify: `src/hooks.server.ts:1-8,32`
+
+**Interfaces:**
+- Consumes: `getRedisConnection`, `QUEUE_NAME`, `fromEventDeliveryJob`, `EventDeliveryJobData`, `deliverEventChange`.
+- Produces: `startNotificationWorker(): void` (idempotent; no-op without Redis).
+
+- [ ] **Step 1: Implement the worker** — `src/lib/server/queue/worker.ts`
+
+```ts
+import { Worker, type Job } from 'bullmq';
+import { deliverEventChange } from '$lib/server/notifications';
+import { getRedisConnection } from './connection';
+import { fromEventDeliveryJob, QUEUE_NAME, type EventDeliveryJobData } from './job';
+
+// globalThis flag survives dev HMR module reloads so we never spawn duplicate workers.
+const g = globalThis as unknown as { __oooWorkerStarted?: boolean };
+
+/**
+ * Starts the in-process BullMQ worker once per server process. No-op when Redis
+ * is not configured (dev without Redis) or when already started.
+ */
+export function startNotificationWorker(): void {
+	if (g.__oooWorkerStarted) return;
+	const connection = getRedisConnection();
+	if (!connection) return;
+	g.__oooWorkerStarted = true;
+	const worker = new Worker<EventDeliveryJobData>(
+		QUEUE_NAME,
+		async (job: Job<EventDeliveryJobData>) => {
+			await deliverEventChange(fromEventDeliveryJob(job.data));
+		},
+		{ connection, concurrency: 5 }
+	);
+	worker.on('failed', (job, err) => console.error('[queue] job failed:', job?.id, err));
+}
+```
+
+- [ ] **Step 2: Start the worker at boot** — `src/hooks.server.ts`
+
+Add to the imports (after line 7):
+
+```ts
+import { startNotificationWorker } from '$lib/server/queue/worker';
+```
+
+After the imports and before `const handleParaglide` (i.e. at module top level), add:
+
+```ts
+if (!building) startNotificationWorker();
+```
+
+(`building` is already imported on line 2. The guard skips the worker during the build/prerender pass; `startNotificationWorker` itself no-ops when `REDIS_URL` is unset.)
+
+- [ ] **Step 3: Typecheck**
+
+Run: `pnpm check`
+Expected: no errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/lib/server/queue/worker.ts src/hooks.server.ts
+git commit -m "feat: start in-process notification worker at boot"
+```
+
+---
+
+### Task 8: Notify on delete
+
+The `save` and `move` actions already call `notifyEventChange` (now async internally) — no change. Only `delete` needs wiring, plus a widened `.returning(...)` so the job can be built after the row is gone.
+
+**Files:**
+- Modify: `src/routes/app/calendar/+page.server.ts:139-156`
+
+**Interfaces:**
+- Consumes: `notifyEventChange` (already imported on line 13).
+
+- [ ] **Step 1: Wire the delete action** — `src/routes/app/calendar/+page.server.ts`
+
+Replace the `delete` action (lines 139-156) with:
+
+```ts
+	delete: async (event) => {
+		const form = await superValidate(event.request, zod4(deleteEventSchema), { id: 'delete' });
+		if (!form.valid) return fail(400, { form });
+		const user = requireUser(event.locals);
+
+		const deleted = await db
+			.delete(calendarEvent)
+			.where(and(eq(calendarEvent.id, form.data.id), eq(calendarEvent.userId, user.id)))
+			.returning({
+				id: calendarEvent.id,
+				type: calendarEvent.type,
+				title: calendarEvent.title,
+				allDay: calendarEvent.allDay,
+				start: calendarEvent.start,
+				end: calendarEvent.end
+			});
+		if (deleted.length === 0) error(404);
+
+		try {
+			await notifyEventChange({ id: user.id, name: user.name }, 'deleted', deleted[0].title, deleted[0].type, {
+				allDay: deleted[0].allDay,
+				start: deleted[0].start,
+				end: deleted[0].end
+			});
+		} catch (err) {
+			console.error('[calendar] notification fan-out failed:', err);
+		}
+
+		redirect(
+			303,
+			calendarPath(event.url, user.timezone),
+			{ type: 'success', message: m.calendar_event_deleted() },
+			event
+		);
+	},
+```
+
+- [ ] **Step 2: Typecheck**
+
+Run: `pnpm check`
+Expected: no errors.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/routes/app/calendar/+page.server.ts
+git commit -m "feat: notify on calendar event delete"
+```
+
+---
+
+### Task 9: Full verification
+
+**Files:** none (verification only).
+
+- [ ] **Step 1: Run the full unit suite**
+
+Run: `pnpm test`
+Expected: all specs pass, including the new job, queue, notifications, email, message, and read-side tests.
+
+- [ ] **Step 2: Lint + typecheck**
+
+Run: `pnpm lint && pnpm check`
+Expected: clean.
+
+- [ ] **Step 3: Production build**
+
+Run: `pnpm build`
+Expected: build succeeds (confirms the queue/worker modules bundle into the adapter-node server).
+
+- [ ] **Step 4: Manual end-to-end (dev)**
+
+1. Ensure `REDIS_URL` is set in `.env` and start infra: `pnpm db:start` (Postgres + Redis), then `pnpm dev`.
+2. As the test user, create an event → the calendar redirect is immediate; within ~1s the recipient's in-app notification appears and (with `RESEND_API_KEY` set, or via the dev console log) an email + any configured team webhook fire from the worker.
+3. Update the event → an `event_updated` notification + delivery.
+4. Delete the event → an `event_deleted` in-app notification appears and the delete email/webhook fire (new behavior).
+5. Confirm the worker log shows job processing and no `[queue] job failed` errors.
+
+Verify against dev Postgres directly (per repo convention) that `notification` rows carry the expected `type` values (`event_created` / `event_updated` / `event_deleted`).
+
+- [ ] **Step 5: Final commit (if any verification fixups were needed)**
+
+```bash
+git add -A
+git commit -m "chore: verify async notification delivery"
+```
+
+---
+
+## Self-Review Notes
+
+- **Spec coverage:** queue choice (Tasks 4-5,7), in-process worker (Task 7), in-band inserts + queued external delivery seam (Task 6), job contract with `emailRecipients` snapshot (Task 4/6), best-effort semantics (Task 6 test), delete parity across enum/email/channel/read-side/i18n (Tasks 1-3,8), config/deps/dev (Task 5), tests (each task). `notifyShareCreated` left untouched (Task 6 only edits `notifyEventChange`).
+- **Deferred/out-of-scope confirmed absent:** no per-recipient retry/idempotency, no share-notification queueing, no standalone worker service, no queue dashboard.
