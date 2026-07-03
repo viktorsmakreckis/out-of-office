@@ -1,4 +1,5 @@
 <script lang="ts">
+	import LandingFeatures from '$lib/components/landing/landing-features.svelte';
 	import LandingFooter from '$lib/components/landing/landing-footer.svelte';
 	import LandingHero from '$lib/components/landing/landing-hero.svelte';
 	import LandingNav from '$lib/components/landing/landing-nav.svelte';
@@ -14,6 +15,7 @@
 	<LandingNav />
 	<main class="flex-1">
 		<LandingHero />
+		<LandingFeatures />
 	</main>
 	<LandingFooter />
 </div>
