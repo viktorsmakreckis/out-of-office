@@ -1,5 +1,5 @@
 import { error, fail, redirect as kitRedirect } from '@sveltejs/kit';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt } from 'drizzle-orm';
 import { parseDate, today, type CalendarDate } from '@internationalized/date';
 import { redirect } from 'sveltekit-flash-message/server';
 import { superValidate } from 'sveltekit-superforms';
@@ -58,6 +58,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				: filter === 'shared'
 					? owners.filter((o) => o.via === 'share').map((o) => o.id)
 					: [user.id, ...owners.map((o) => o.id)];
+	// Window is a generous superset of any view's visible span (month/week/agenda all fit
+	// within anchor ±2 months), so a single query serves every view without refetching on
+	// in-view navigation.
+	const timezone = safeTimezone(user.timezone);
+	const windowStart = date.subtract({ months: 2 }).toDate(timezone);
+	const windowEnd = date.add({ months: 2 }).toDate(timezone);
 	const [records, eventForm, deleteForm, moveForm] = await Promise.all([
 		ownerIds.length === 0
 			? []
@@ -74,7 +80,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 					})
 					.from(calendarEvent)
 					.innerJoin(userTable, eq(calendarEvent.userId, userTable.id))
-					.where(inArray(calendarEvent.userId, ownerIds))
+					.where(
+						and(
+							inArray(calendarEvent.userId, ownerIds),
+							lt(calendarEvent.start, windowEnd),
+							gte(calendarEvent.end, windowStart)
+						)
+					)
 					.orderBy(asc(calendarEvent.start)),
 		superValidate(zod4(eventSchema), { id: 'event' }),
 		superValidate(zod4(deleteEventSchema), { id: 'delete' }),
