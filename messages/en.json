@@ -320,5 +320,7 @@
 	"feed_copy_cta": "Copy",
 	"feed_copied": "Feed URL copied.",
 	"feed_regenerate_cta": "Regenerate",
-	"feed_regenerated": "Feed URL regenerated. The old URL no longer works."
+	"feed_regenerated": "Feed URL regenerated. The old URL no longer works.",
+	"feed_regenerate_confirm_title": "Regenerate this feed URL?",
+	"feed_regenerate_confirm_description": "The current URL stops working immediately. Anyone already subscribed will need the new URL to keep seeing events."
 }

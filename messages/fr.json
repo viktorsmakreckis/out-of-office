@@ -320,5 +320,7 @@
 	"feed_copy_cta": "Copier",
 	"feed_copied": "URL du flux copiée.",
 	"feed_regenerate_cta": "Régénérer",
-	"feed_regenerated": "URL du flux régénérée. L'ancienne URL ne fonctionne plus."
+	"feed_regenerated": "URL du flux régénérée. L'ancienne URL ne fonctionne plus.",
+	"feed_regenerate_confirm_title": "Régénérer cette URL de flux ?",
+	"feed_regenerate_confirm_description": "L'URL actuelle cesse de fonctionner immédiatement. Toute personne déjà abonnée devra utiliser la nouvelle URL pour continuer à voir les absences."
 }

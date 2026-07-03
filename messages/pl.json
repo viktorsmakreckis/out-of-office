@@ -320,5 +320,7 @@
 	"feed_copy_cta": "Kopiuj",
 	"feed_copied": "Adres kanału skopiowany.",
 	"feed_regenerate_cta": "Wygeneruj ponownie",
-	"feed_regenerated": "Adres kanału wygenerowany ponownie. Stary adres już nie działa."
+	"feed_regenerated": "Adres kanału wygenerowany ponownie. Stary adres już nie działa.",
+	"feed_regenerate_confirm_title": "Wygenerować ten adres kanału ponownie?",
+	"feed_regenerate_confirm_description": "Obecny adres przestanie działać natychmiast. Osoby już subskrybujące będą potrzebować nowego adresu, aby nadal widzieć nieobecności."
 }
