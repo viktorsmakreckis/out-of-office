@@ -34,15 +34,32 @@ function addDays(date: Date, days: number): Date {
 	return new Date(date.getTime() + days * 86_400_000);
 }
 
-/** RFC 5545 line folding: continuation lines start with a single space. */
+const textEncoder = new TextEncoder();
+
+/**
+ * RFC 5545 §3.1 line folding: no physical line may exceed 75 octets (UTF-8
+ * bytes), and continuation lines start with a single space (which itself
+ * counts as 1 octet toward that line's budget). Folding must never split a
+ * Unicode code point, so we iterate code points (not UTF-16 code units) and
+ * measure each one's UTF-8 byte length.
+ */
 function foldLine(line: string): string {
 	const parts: string[] = [];
-	let rest = line;
-	while (rest.length > 74) {
-		parts.push(rest.slice(0, 74));
-		rest = ` ${rest.slice(74)}`;
+	let current = '';
+	let currentOctets = 0;
+
+	for (const ch of line) {
+		const chOctets = textEncoder.encode(ch).length;
+		if (currentOctets + chOctets > 75) {
+			parts.push(current);
+			current = ' ';
+			currentOctets = 1;
+		}
+		current += ch;
+		currentOctets += chOctets;
 	}
-	parts.push(rest);
+	parts.push(current);
+
 	return parts.join('\r\n');
 }
 

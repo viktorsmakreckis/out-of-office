@@ -59,10 +59,42 @@ describe('buildIcalFeed', () => {
 		expect(feed).toContain('DTSTAMP:20260701T123045Z');
 	});
 
-	it('folds lines longer than 74 characters', () => {
+	it('folds lines longer than 74 characters, keeping every physical line within 75 octets', () => {
 		const feed = buildIcalFeed('x', [makeEvent({ title: 'y'.repeat(120) })]);
 		for (const line of feed.split('\r\n')) {
-			expect(line.length).toBeLessThanOrEqual(75);
+			expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+		}
+	});
+
+	it('folds multi-byte UTF-8 titles without exceeding 75 octets per line or corrupting characters', () => {
+		const title = '🌴'.repeat(40);
+		const feed = buildIcalFeed('x', [makeEvent({ title })]);
+
+		for (const line of feed.split('\r\n')) {
+			expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+		}
+
+		// No lone/unpaired surrogates anywhere in the output — astral code points
+		// (e.g. emoji) must never be split across a fold boundary.
+		expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(feed)).toBe(false);
+		expect(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(feed)).toBe(false);
+
+		// Unfolding (removing every CRLF + single leading space) must round-trip
+		// to a string containing the escaped original title, uncorrupted.
+		const unfolded = feed.replace(/\r\n /g, '');
+		expect(unfolded).toContain(title);
+	});
+
+	it('folds a long title into multiple physical lines within the 75-octet budget', () => {
+		const feed = buildIcalFeed('x', [makeEvent({ title: 'z'.repeat(200) })]);
+		const summaryStart = feed.indexOf('SUMMARY:');
+		const nextField = feed.indexOf('\r\nDTSTART', summaryStart);
+		const summaryBlock = feed.slice(summaryStart, nextField);
+		const summaryLines = summaryBlock.split('\r\n');
+
+		expect(summaryLines.length).toBeGreaterThanOrEqual(3);
+		for (const line of summaryLines) {
+			expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
 		}
 	});
 });
