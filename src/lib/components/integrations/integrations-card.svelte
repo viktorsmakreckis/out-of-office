@@ -10,6 +10,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import { addConnectionSchema } from '$lib/schemas/integration';
 	import { toFieldErrors } from '$lib/utils';
 	import FeedUrlField from './feed-url-field.svelte';
@@ -52,7 +53,7 @@
 	} = connection;
 
 	const failingSince = (date: Date | null) =>
-		date ? m.integrations_failing({ date: date.toLocaleDateString() }) : '';
+		date ? m.integrations_failing({ date: date.toLocaleDateString(getLocale()) }) : '';
 </script>
 
 <Card.Root>

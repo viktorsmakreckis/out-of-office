@@ -7,8 +7,12 @@
 	let { url, description }: { url: string; description: string } = $props();
 
 	async function copy() {
-		await navigator.clipboard.writeText(url);
-		toast.success(m.feed_copied());
+		try {
+			await navigator.clipboard.writeText(url);
+			toast.success(m.feed_copied());
+		} catch {
+			toast.error(m.error_generic());
+		}
 	}
 </script>
 
