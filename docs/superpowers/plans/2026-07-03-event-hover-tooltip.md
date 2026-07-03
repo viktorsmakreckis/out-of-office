@@ -24,10 +24,12 @@
 ### Task 1: Date-range format helpers
 
 **Files:**
+
 - Modify: `src/lib/components/calendar/core/format.ts` (append after `formatTimeRange`, `src/lib/components/calendar/core/format.ts:55`)
 - Test: `src/lib/components/calendar/core/format.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing private `formatter(locale, options)` cache in `format.ts`.
 - Produces (used by Task 2):
   - `formatDateRange(start: CalendarDate, end: CalendarDate, locale: string): string` — "Jul 2" when start = end, "Jul 2 – 7" style range otherwise.
@@ -124,9 +126,11 @@ git commit -m "feat(calendar): date and datetime range format helpers"
 ### Task 2: `event-tooltip.svelte` component
 
 **Files:**
+
 - Create: `src/lib/components/calendar/event-tooltip.svelte`
 
 **Interfaces:**
+
 - Consumes: `formatDateRange` / `formatDateTimeRange` from Task 1; `$lib/components/ui/tooltip` (shadcn wrappers over bits-ui); `m.calendar_all_day()` paraglide message (already exists — used in `week-view.svelte:362`).
 - Produces (used by Tasks 3–5): component `EventTooltip` with props:
   - `event: CalendarEvent<T>` (generic `T`)
@@ -184,6 +188,7 @@ Create `src/lib/components/calendar/event-tooltip.svelte`:
 ```
 
 Notes for the implementer:
+
 - The `child` snippet is bits-ui's way to make an element you render yourself act as the trigger; `Tooltip.Trigger` (shadcn wrapper) forwards it through `{...restProps}`.
 - `disabled` is a documented bits-ui `Tooltip.Root` prop forwarded by the shadcn wrapper's `restProps`. If `pnpm check` rejects it there, move it to `<Tooltip.Provider {disabled} ...>` (also a documented Provider prop) — behavior is equivalent here since the Provider wraps a single tooltip.
 - A Provider per tooltip matches the existing per-usage pattern in `calendar-header.svelte:28`.
@@ -208,9 +213,11 @@ git commit -m "feat(calendar): event tooltip component"
 ### Task 3: Month view integration (grid chips + "+N more" popover)
 
 **Files:**
+
 - Modify: `src/lib/components/calendar/month-view.svelte` (imports at top; popover chips at `:254-261`; grid chips at `:284-293` — line numbers from before this change)
 
 **Interfaces:**
+
 - Consumes: `EventTooltip` from Task 2; `mergeProps` from `bits-ui` (merges the tooltip's trigger handlers with the view's own `onclick`/`onpointerdown` so both run).
 - Produces: nothing new.
 
@@ -286,9 +293,11 @@ git commit -m "feat(calendar): hover tooltips on month view events"
 ### Task 4: Week view integration (all-day lane + timed grid)
 
 **Files:**
+
 - Modify: `src/lib/components/calendar/week-view.svelte` (imports at top; all-day lane `EventChip` at `:397-406`; timed block `<button>` at `:464-483` — line numbers from before this change)
 
 **Interfaces:**
+
 - Consumes: `EventTooltip` (Task 2), `mergeProps` from `bits-ui`.
 - Produces: nothing new.
 
@@ -378,9 +387,11 @@ git commit -m "feat(calendar): hover tooltips on week view events"
 ### Task 5: Agenda view integration
 
 **Files:**
+
 - Modify: `src/lib/components/calendar/agenda-view.svelte` (imports at top; list-item `<button>` at `:68-84` — line numbers from before this change)
 
 **Interfaces:**
+
 - Consumes: `EventTooltip` (Task 2), `mergeProps` from `bits-ui`.
 - Produces: nothing new.
 
@@ -410,9 +421,7 @@ Replace the `<button>` inside the `<li>` (currently `agenda-view.svelte:68-84`),
 			{:else}
 				<span class={dotVariants({ color: event.color })}></span>
 				<span class="text-muted-foreground min-w-36 shrink-0 whitespace-nowrap">
-					{event.allDay
-						? m.calendar_all_day()
-						: formatTimeRange(event.start, event.end, locale)}
+					{event.allDay ? m.calendar_all_day() : formatTimeRange(event.start, event.end, locale)}
 				</span>
 				<span class="truncate font-medium">{event.title}</span>
 			{/if}
@@ -468,6 +477,7 @@ from "user" u where u.email = 'dash-tester@example.com';
 ```
 
 Verify on the calendar page (July 2026):
+
 1. **Month view:** hover a short event with the long title → after ~0.5s a tooltip shows the full wrapped title plus "All day · Jul 15"; hover a multi-day event → date range line.
 2. **"+N more" popover:** open it (seed 5+ events on one day if none overflows), hover a chip inside → tooltip appears.
 3. **Week view:** hover an all-day lane chip and a timed block → tooltips with correct date/time lines ("Jul N, 9:00 – 10:30 AM" style for timed).
