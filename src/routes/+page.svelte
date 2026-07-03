@@ -1,7 +1,9 @@
 <script lang="ts">
+	import LandingFaq from '$lib/components/landing/landing-faq.svelte';
 	import LandingFeatures from '$lib/components/landing/landing-features.svelte';
 	import LandingFooter from '$lib/components/landing/landing-footer.svelte';
 	import LandingHero from '$lib/components/landing/landing-hero.svelte';
+	import LandingHowItWorks from '$lib/components/landing/landing-how-it-works.svelte';
 	import LandingNav from '$lib/components/landing/landing-nav.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 </script>
@@ -16,6 +18,8 @@
 	<main class="flex-1">
 		<LandingHero />
 		<LandingFeatures />
+		<LandingHowItWorks />
+		<LandingFaq />
 	</main>
 	<LandingFooter />
 </div>
