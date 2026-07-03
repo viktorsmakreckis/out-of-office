@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import IntegrationsCard from '$lib/components/integrations/integrations-card.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -366,4 +367,12 @@
 			{/if}
 		</Card.Content>
 	</Card.Root>
+
+	{#if data.integrations}
+		<IntegrationsCard
+			connections={data.integrations.connections}
+			feedUrl={data.integrations.feedUrl}
+			form={data.integrations.connectionForm}
+		/>
+	{/if}
 </div>
