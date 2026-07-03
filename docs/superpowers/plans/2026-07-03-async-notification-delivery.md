@@ -22,6 +22,7 @@
 ## File Structure
 
 **New files**
+
 - `src/lib/server/queue/job.ts` — job types + `QUEUE_NAME` + pure `Date↔ISO` (de)serialization. No BullMQ import (keeps it unit-testable).
 - `src/lib/server/queue/job.spec.ts` — serialization round-trip test.
 - `src/lib/server/queue/connection.ts` — lazy shared ioredis connection from `REDIS_URL` (returns `null` when unset).
@@ -32,6 +33,7 @@
 - `src/lib/notifications.spec.ts` — `toAppNotification` handles `event_deleted`.
 
 **Modified files**
+
 - `src/lib/server/db/schema.ts` — add `event_deleted` to `notificationTypeEnum` (+ generated migration).
 - `src/lib/notifications.ts` — read-side union + `toAppNotification` case for `event_deleted`.
 - `src/routes/app/notifications/+page.svelte` — render case for `event_deleted`.
@@ -51,12 +53,14 @@
 Adds the new notification type end-to-end on the storage/display side, so later tasks can write and render it.
 
 **Files:**
+
 - Modify: `src/lib/server/db/schema.ts:122-127` (enum), `src/lib/notifications.ts:14-18,54-63` (union + mapper)
 - Modify: `src/routes/app/notifications/+page.svelte:23-27` (render case)
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 - Create: `src/lib/notifications.spec.ts`
 
 **Interfaces:**
+
 - Produces: `notificationTypeEnum` includes `'event_deleted'`; `AppNotification` union includes `{ type: 'event_deleted'; data: { eventTitle: string | null; eventType: string } }`; message key `notification_event_deleted`.
 
 - [ ] **Step 1: Write the failing test** — `src/lib/notifications.spec.ts`
@@ -196,22 +200,30 @@ git commit -m "feat: add event_deleted notification type"
 ### Task 2: `deleted` variant of the event-change email
 
 **Files:**
+
 - Modify: `src/lib/server/email.ts:98-116`
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 - Test: `src/lib/server/email.spec.ts:57-75`
 
 **Interfaces:**
+
 - Consumes: message key `email_event_deleted_subject`.
 - Produces: `eventChangeEmail(actorName, eventLabel, kind: 'created' | 'updated' | 'deleted', url, locale)`.
 
 - [ ] **Step 1: Write the failing test** — append to the `describe('sharing emails', …)` block in `src/lib/server/email.spec.ts`
 
 ```ts
-	it('eventChangeEmail localizes the deleted subject', () => {
-		const deleted = eventChangeEmail('Alice', 'Vacation', 'deleted', 'https://x/app/calendar', 'en-GB');
-		expect(deleted.subject).toContain('deleted');
-		expect(deleted.text).toContain('Vacation');
-	});
+it('eventChangeEmail localizes the deleted subject', () => {
+	const deleted = eventChangeEmail(
+		'Alice',
+		'Vacation',
+		'deleted',
+		'https://x/app/calendar',
+		'en-GB'
+	);
+	expect(deleted.subject).toContain('deleted');
+	expect(deleted.text).toContain('Vacation');
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -288,24 +300,26 @@ git commit -m "feat: add deleted variant to event-change email"
 ### Task 3: `deleted` variant of the channel (webhook) message
 
 **Files:**
+
 - Modify: `src/lib/server/integrations/message.ts:10-17,68-84,90-103`
 - Modify: `src/lib/server/integrations/webhooks.ts:13-20`
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 - Test: `src/lib/server/integrations/message.spec.ts:62-88`
 
 **Interfaces:**
+
 - Consumes: message key `channel_message_deleted`.
 - Produces: `OooMessage.kind` and `ChannelEvent.kind` include `'deleted'`; `buildEventMessage(actorName, kind: 'created' | 'updated' | 'deleted', …)`.
 
 - [ ] **Step 1: Write the failing test** — append to the `describe('composeLine', …)` block in `src/lib/server/integrations/message.spec.ts`
 
 ```ts
-	it('renders the deleted template', () => {
-		const message = buildEventMessage('Alice', 'deleted', null, 'vacation', range, 'en-GB');
-		const line = composeLine(message, (s) => `*${s}*`);
-		expect(line).toContain('*Alice*');
-		expect(line).toContain('cancelled');
-	});
+it('renders the deleted template', () => {
+	const message = buildEventMessage('Alice', 'deleted', null, 'vacation', range, 'en-GB');
+	const line = composeLine(message, (s) => `*${s}*`);
+	expect(line).toContain('*Alice*');
+	expect(line).toContain('cancelled');
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -350,9 +364,9 @@ Then recompile paraglide: `pnpm exec paraglide-js compile --project ./project.in
 Replace `composeLine`'s final return (lines 100-102) with:
 
 ```ts
-	if (message.kind === 'created') return m.channel_message_created(params, { locale });
-	if (message.kind === 'updated') return m.channel_message_updated(params, { locale });
-	return m.channel_message_deleted(params, { locale });
+if (message.kind === 'created') return m.channel_message_created(params, { locale });
+if (message.kind === 'updated') return m.channel_message_updated(params, { locale });
+return m.channel_message_deleted(params, { locale });
 ```
 
 (The `if (message.kind === 'test')` guard on line 93 stays above this.)
@@ -382,10 +396,12 @@ git commit -m "feat: add deleted variant to channel message"
 Pure module: types, queue name, and `Date↔ISO` conversion. No BullMQ import so it stays unit-testable in isolation.
 
 **Files:**
+
 - Create: `src/lib/server/queue/job.ts`
 - Create: `src/lib/server/queue/job.spec.ts`
 
 **Interfaces:**
+
 - Produces:
   - `QUEUE_NAME = 'notifications'`
   - `type EventDeliveryPayload = { actorId: string; actorName: string; kind: 'created' | 'updated' | 'deleted'; title: string | null; type: string; range: { allDay: boolean; start: Date; end: Date }; emailRecipients: Array<{ email: string; locale: string }> }`
@@ -502,10 +518,12 @@ git commit -m "feat: add event delivery job contract"
 ### Task 5: Redis connection + queue producer + infra config
 
 **Files:**
+
 - Create: `src/lib/server/queue/connection.ts`, `src/lib/server/queue/index.ts`, `src/lib/server/queue/index.spec.ts`
 - Modify: `package.json` (deps), `.env.example`, `compose.yaml`
 
 **Interfaces:**
+
 - Consumes: `QUEUE_NAME`, `EventDeliveryJobData`, `EventDeliveryPayload`, `toEventDeliveryJob` from `./job`.
 - Produces:
   - `getRedisConnection(): IORedis | null` (`./connection`)
@@ -573,7 +591,12 @@ export function getRedisConnection(): IORedis | null {
 ```ts
 import { Queue } from 'bullmq';
 import { getRedisConnection } from './connection';
-import { QUEUE_NAME, toEventDeliveryJob, type EventDeliveryJobData, type EventDeliveryPayload } from './job';
+import {
+	QUEUE_NAME,
+	toEventDeliveryJob,
+	type EventDeliveryJobData,
+	type EventDeliveryPayload
+} from './job';
 
 let queue: Queue<EventDeliveryJobData> | null | undefined;
 
@@ -653,10 +676,12 @@ git commit -m "feat: add redis-backed notification queue producer"
 Refactors `notifyEventChange` to do only the in-band work and enqueue; adds `deliverEventChange` (the worker's job body) and the pure `eventNotificationType` mapper. Extends both to `deleted`.
 
 **Files:**
+
 - Modify: `src/lib/server/notifications.ts:1-22,89-111`
 - Create: `src/lib/server/notifications.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `enqueueEventDelivery` (`$lib/server/queue`), `EventDeliveryPayload` (`$lib/server/queue/job`), existing `getEventAudience`, `sendEmail`, `eventChangeEmail`, `postEventToTeamChannels`.
 - Produces:
   - `notifyEventChange(actor: { id: string; name: string }, kind: 'created' | 'updated' | 'deleted', eventTitle: string | null, eventType: string, range: { allDay: boolean; start: Date; end: Date }): Promise<void>` — in-band audience + insert + enqueue.
@@ -711,7 +736,10 @@ describe('deliverEventChange', () => {
 			.mockResolvedValueOnce(undefined);
 		await expect(deliverEventChange(payload)).resolves.toBeUndefined();
 		expect(sendEmail).toHaveBeenCalledTimes(2);
-		expect(postEventToTeamChannels).toHaveBeenCalledWith('u1', expect.objectContaining({ kind: 'deleted' }));
+		expect(postEventToTeamChannels).toHaveBeenCalledWith(
+			'u1',
+			expect.objectContaining({ kind: 'deleted' })
+		);
 	});
 });
 ```
@@ -749,7 +777,8 @@ import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } fro
 Change the `NotificationType` alias (line 22) to include the deleted type:
 
 ```ts
-type NotificationType = 'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated' | 'event_deleted';
+type NotificationType =
+	'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated' | 'event_deleted';
 ```
 
 Widen `recipientLocale` (line 44-46) to accept anything with a `locale`, so it works for both `Recipient` and the job's `emailRecipients`:
@@ -769,7 +798,11 @@ Replace the whole `notifyEventChange` function (lines 89-111) with:
 export function eventNotificationType(
 	kind: 'created' | 'updated' | 'deleted'
 ): 'event_created' | 'event_updated' | 'event_deleted' {
-	return kind === 'created' ? 'event_created' : kind === 'updated' ? 'event_updated' : 'event_deleted';
+	return kind === 'created'
+		? 'event_created'
+		: kind === 'updated'
+			? 'event_updated'
+			: 'event_deleted';
 }
 
 /**
@@ -820,7 +853,13 @@ export async function deliverEventChange(payload: EventDeliveryPayload): Promise
 			const label = payload.title ?? eventTypeLabelFor(payload.type, locale);
 			return sendEmail(
 				recipient.email,
-				eventChangeEmail(payload.actorName, label, payload.kind, `${env.ORIGIN}/app/calendar`, locale)
+				eventChangeEmail(
+					payload.actorName,
+					label,
+					payload.kind,
+					`${env.ORIGIN}/app/calendar`,
+					locale
+				)
 			);
 		})
 	);
@@ -861,10 +900,12 @@ git commit -m "feat: enqueue external notification delivery, keep inserts in-ban
 Glue with no unit test (BullMQ `Worker` needs a live broker); verified by typecheck here and end-to-end in Task 9.
 
 **Files:**
+
 - Create: `src/lib/server/queue/worker.ts`
 - Modify: `src/hooks.server.ts:1-8,32`
 
 **Interfaces:**
+
 - Consumes: `getRedisConnection`, `QUEUE_NAME`, `fromEventDeliveryJob`, `EventDeliveryJobData`, `deliverEventChange`.
 - Produces: `startNotificationWorker(): void` (idempotent; no-op without Redis).
 
@@ -934,9 +975,11 @@ git commit -m "feat: start in-process notification worker at boot"
 The `save` and `move` actions already call `notifyEventChange` (now async internally) — no change. Only `delete` needs wiring, plus a widened `.returning(...)` so the job can be built after the row is gone.
 
 **Files:**
+
 - Modify: `src/routes/app/calendar/+page.server.ts:139-156`
 
 **Interfaces:**
+
 - Consumes: `notifyEventChange` (already imported on line 13).
 
 - [ ] **Step 1: Wire the delete action** — `src/routes/app/calendar/+page.server.ts`

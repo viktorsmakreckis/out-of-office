@@ -95,13 +95,13 @@ singleton flag so dev HMR cannot spawn duplicate workers.
 
 ```ts
 type EventDeliveryJob = {
-  actorId: string;
-  actorName: string;
-  kind: 'created' | 'updated' | 'deleted';
-  title: string | null;
-  type: string;
-  range: { allDay: boolean; start: string; end: string }; // ISO — Dates don't survive JSON
-  emailRecipients: Array<{ email: string; locale: string }>;
+	actorId: string;
+	actorName: string;
+	kind: 'created' | 'updated' | 'deleted';
+	title: string | null;
+	type: string;
+	range: { allDay: boolean; start: string; end: string }; // ISO — Dates don't survive JSON
+	emailRecipients: Array<{ email: string; locale: string }>;
 };
 ```
 
@@ -132,7 +132,7 @@ Delete currently notifies nothing; bringing it to parity touches:
 
 - **Schema:** add `'event_deleted'` to `notificationTypeEnum` in
   `src/lib/server/db/schema.ts`; `drizzle-kit generate` → `ALTER TYPE
-  notification_type ADD VALUE 'event_deleted'`, then `db:migrate`.
+notification_type ADD VALUE 'event_deleted'`, then `db:migrate`.
 - **`notifyEventChange`:** widen `kind` to include `'deleted'` → maps to
   `event_deleted`.
 - **Email** (`email.ts`): `eventChangeEmail` gains a `'deleted'` subject
