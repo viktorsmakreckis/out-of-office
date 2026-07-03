@@ -234,6 +234,7 @@
 	"email_calendar_shared_cta": "Partager le vôtre",
 	"email_event_created_subject": "{name} a créé un événement",
 	"email_event_updated_subject": "{name} a mis à jour un événement",
+	"email_event_deleted_subject": "{name} a supprimé un événement",
 	"email_event_change_body": "{name} a modifié « {title} » sur un calendrier que vous voyez.",
 	"email_event_change_cta": "Ouvrir le calendrier",
 	"validation_team_name_required": "Le nom de l'équipe est requis",

@@ -234,6 +234,7 @@
 	"email_calendar_shared_cta": "Udostępnij swój",
 	"email_event_created_subject": "{name} tworzy wydarzenie",
 	"email_event_updated_subject": "{name} aktualizuje wydarzenie",
+	"email_event_deleted_subject": "{name} usuwa wydarzenie",
 	"email_event_change_body": "{name} zmienia \"{title}\" w kalendarzu, który widzisz.",
 	"email_event_change_cta": "Otwórz kalendarz",
 	"validation_team_name_required": "Nazwa zespołu jest wymagana",

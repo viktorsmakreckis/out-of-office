@@ -73,4 +73,16 @@ describe('sharing emails', () => {
 		expect(updated.subject).toContain('updated');
 		expect(created.text).toContain('Vacation');
 	});
+
+	it('eventChangeEmail localizes the deleted subject', () => {
+		const deleted = eventChangeEmail(
+			'Alice',
+			'Vacation',
+			'deleted',
+			'https://x/app/calendar',
+			'en-GB'
+		);
+		expect(deleted.subject).toContain('deleted');
+		expect(deleted.text).toContain('Vacation');
+	});
 });

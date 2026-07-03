@@ -234,6 +234,7 @@
 	"email_calendar_shared_cta": "Share yours back",
 	"email_event_created_subject": "{name} created an event",
 	"email_event_updated_subject": "{name} updated an event",
+	"email_event_deleted_subject": "{name} deleted an event",
 	"email_event_change_body": "{name} changed \"{title}\" on a calendar you can see.",
 	"email_event_change_cta": "Open calendar",
 	"validation_team_name_required": "Team name is required",
