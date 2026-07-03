@@ -56,6 +56,23 @@ describe('resolveVisibleOwners', () => {
 		];
 		expect(resolveVisibleOwners('me', org('t1', 'me', 'bob'), shares).has('me')).toBe(false);
 	});
+
+	it('when the viewer is in the sharer org, co-members are seen via team, not share', () => {
+		// t1 (viewer's own team) shared its calendar directly with the viewer. The viewer is
+		// a member of t1, so bob and eve (t1 teammates) are already visible via team
+		// membership — that route wins over the 'share' route for the same owners.
+		const shares = [
+			{ id: 's1', sharerUserId: null, sharerOrgId: 't1', targetUserId: 'me', targetOrgId: null }
+		];
+		const owners = resolveVisibleOwners('me', org('t1', 'me', 'bob', 'eve'), shares);
+		expect(owners.has('me')).toBe(false);
+		expect(owners.get('bob')).toBe('team');
+		expect(owners.get('eve')).toBe('team');
+	});
+
+	it('returns nothing for empty memberships and shares', () => {
+		expect(resolveVisibleOwners('me', [], []).size).toBe(0);
+	});
 });
 
 describe('resolveEventAudience', () => {
@@ -99,5 +116,9 @@ describe('resolveEventAudience', () => {
 			{ userId: 'ann', shareId: 's1' }
 		]);
 		expect(audience.has('ann')).toBe(true);
+	});
+
+	it('returns nothing for empty memberships, shares, and hides', () => {
+		expect(resolveEventAudience('me', [], [], []).size).toBe(0);
 	});
 });
