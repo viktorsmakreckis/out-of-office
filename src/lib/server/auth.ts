@@ -91,6 +91,14 @@ export const auth = betterAuth({
 	},
 	plugins: [
 		organization({
+			// Team language drives the locale of integration/webhook channel messages.
+			schema: {
+				organization: {
+					additionalFields: {
+						locale: { type: 'string', required: false, input: true, defaultValue: baseLocale }
+					}
+				}
+			},
 			sendInvitationEmail: async (data) => {
 				const invitee = await db.select().from(user).where(eq(user.email, data.email)).limit(1);
 				const locale = invitee[0] ? userLocale(invitee[0]) : baseLocale;

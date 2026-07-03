@@ -157,3 +157,64 @@ export const notification = pgTable(
 	},
 	(table) => [index('notification_user_id_idx').on(table.userId, table.createdAt)]
 );
+
+export const integrationProviderEnum = pgEnum('integration_provider', [
+	'slack',
+	'discord',
+	'msteams'
+]);
+export type IntegrationProvider = (typeof integrationProviderEnum.enumValues)[number];
+
+/** Phase 1 only has webhooks; Phase 2 adds 'oauth'. */
+export const integrationKindEnum = pgEnum('integration_kind', ['webhook']);
+
+/**
+ * A webhook connection owned by a team (org) or, from Phase 2, a user — XOR,
+ * same pattern as calendar_share. Failure counters let the UI surface dead
+ * webhooks; see docs/superpowers/specs/2026-07-03-integrations-phase-1-design.md.
+ */
+export const integrationConnection = pgTable(
+	'integration_connection',
+	{
+		id: text('id')
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		orgId: text('org_id').references(() => organization.id, { onDelete: 'cascade' }),
+		userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+		provider: integrationProviderEnum('provider').notNull(),
+		kind: integrationKindEnum('kind').notNull().default('webhook'),
+		webhookUrl: text('webhook_url').notNull(),
+		label: text('label'),
+		// Team-owned resource: keep the connection alive when its creator's account is
+		// deleted (set null rather than cascade). Nullable so the FK can null out.
+		createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
+		consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+		lastFailureAt: timestamp('last_failure_at', { withTimezone: true }),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		check(
+			'integration_connection_owner_xor',
+			sql`num_nonnulls(${table.orgId}, ${table.userId}) = 1`
+		),
+		index('integration_connection_org_idx').on(table.orgId),
+		index('integration_connection_user_idx').on(table.userId)
+	]
+);
+
+/** Capability token for a read-only iCal feed; one per user or per org. */
+export const calendarFeedToken = pgTable(
+	'calendar_feed_token',
+	{
+		token: text('token')
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+		orgId: text('org_id').references(() => organization.id, { onDelete: 'cascade' }),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		check('calendar_feed_token_owner_xor', sql`num_nonnulls(${table.userId}, ${table.orgId}) = 1`),
+		unique('calendar_feed_token_owner_unique').on(table.userId, table.orgId).nullsNotDistinct()
+	]
+);

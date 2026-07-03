@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import FeedUrlField from '$lib/components/integrations/feed-url-field.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -21,7 +22,12 @@
 	let { data } = $props();
 
 	// Endonyms are intentionally not translated.
-	const localeLabels: Record<Locale, string> = { en: 'English', pl: 'Polski', fr: 'Français' };
+	const localeLabels: Record<Locale, string> = {
+		'en-GB': 'English (UK)',
+		'en-US': 'English (US)',
+		pl: 'Polski',
+		fr: 'Français'
+	};
 	const timezones = Intl.supportedValuesOf('timeZone');
 
 	// svelte-ignore state_referenced_locally
@@ -226,6 +232,15 @@
 					</div>
 				</Field.Group>
 			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>{m.feed_title()}</Card.Title>
+		</Card.Header>
+		<Card.Content>
+			<FeedUrlField url={data.feedUrl} description={m.feed_user_description()} />
 		</Card.Content>
 	</Card.Root>
 

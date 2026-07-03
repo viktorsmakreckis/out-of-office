@@ -1,5 +1,5 @@
 import { fail, redirect as kitRedirect } from '@sveltejs/kit';
-import { redirect } from 'sveltekit-flash-message/server';
+import { redirect, setFlash } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
@@ -12,6 +12,11 @@ import {
 } from '$lib/schemas/auth';
 import { auth } from '$lib/server/auth';
 import { authErrorMessage } from '$lib/server/auth-error';
+import {
+	feedUrl,
+	getOrCreateFeedToken,
+	regenerateFeedToken
+} from '$lib/server/integrations/feed-tokens';
 import { checkRateLimit } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -31,7 +36,13 @@ export const load: PageServerLoad = async ({ parent }) => {
 		superValidate(zod4(changePasswordSchema), { id: 'changePassword' }),
 		superValidate(zod4(deleteAccountSchema), { id: 'deleteAccount' })
 	]);
-	return { profileForm, emailForm, passwordForm, deleteForm };
+	return {
+		profileForm,
+		emailForm,
+		passwordForm,
+		deleteForm,
+		feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'user', id: user.id }))
+	};
 };
 
 export const actions: Actions = {
@@ -143,5 +154,13 @@ export const actions: Actions = {
 		}
 
 		redirect(303, '/login', { type: 'success', message: m.settings_deleted() }, event);
+	},
+	regenerateFeed: async (event) => {
+		const user = event.locals.user;
+		if (!user) throw kitRedirect(303, '/login');
+		await regenerateFeedToken({ type: 'user', id: user.id });
+		// Flash in place so the settings page keeps its scroll position.
+		setFlash({ type: 'success', message: m.feed_regenerated() }, event);
+		return {};
 	}
 };

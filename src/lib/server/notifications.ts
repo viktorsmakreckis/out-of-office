@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
-import { m } from '$lib/paraglide/messages.js';
+import { eventTypeLabelFor } from '$lib/events/labels';
 import { isLocale, baseLocale } from '$lib/paraglide/runtime';
 import { db } from '$lib/server/db';
 import {
@@ -16,6 +16,7 @@ import {
 	sendEmail,
 	type EmailContent
 } from '$lib/server/email';
+import { postEventToTeamChannels } from '$lib/server/integrations/webhooks';
 import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } from './sharing';
 
 type NotificationType = 'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated';
@@ -85,29 +86,13 @@ export async function notifyShareCreated(
 	);
 }
 
-function eventTypeLabelFor(type: string, locale: ReturnType<typeof recipientLocale>): string {
-	switch (type) {
-		case 'vacation':
-			return m.calendar_event_type_vacation({}, { locale });
-		case 'sick_leave':
-			return m.calendar_event_type_sick_leave({}, { locale });
-		case 'business_trip':
-			return m.calendar_event_type_business_trip({}, { locale });
-		case 'public_holiday':
-			return m.calendar_event_type_public_holiday({}, { locale });
-		case 'remote_work':
-			return m.calendar_event_type_remote_work({}, { locale });
-		default:
-			return m.calendar_event_type_other({}, { locale });
-	}
-}
-
 /** Notifies everyone who can see the actor's calendar about a created/updated event. */
 export async function notifyEventChange(
 	actor: { id: string; name: string },
 	kind: 'created' | 'updated',
 	eventTitle: string | null,
-	eventType: string
+	eventType: string,
+	range: { allDay: boolean; start: Date; end: Date }
 ): Promise<void> {
 	const recipients = await getEventAudience(actor.id);
 	const type = kind === 'created' ? 'event_created' : 'event_updated';
@@ -115,6 +100,13 @@ export async function notifyEventChange(
 		const locale = recipientLocale(recipient);
 		const label = eventTitle ?? eventTypeLabelFor(eventType, locale);
 		return eventChangeEmail(actor.name, label, kind, `${env.ORIGIN}/app/calendar`, locale);
+	});
+	await postEventToTeamChannels(actor.id, {
+		actorName: actor.name,
+		kind,
+		title: eventTitle,
+		type: eventType,
+		range
 	});
 }
 

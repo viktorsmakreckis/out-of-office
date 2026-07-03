@@ -1,23 +1,40 @@
 import { error, fail, redirect as kitRedirect } from '@sveltejs/kit';
 import { and, desc, eq, gt } from 'drizzle-orm';
-import { redirect } from 'sveltekit-flash-message/server';
+import { redirect, setFlash } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
+import { baseLocale, isLocale } from '$lib/paraglide/runtime';
+import { addConnectionSchema, connectionIdSchema } from '$lib/schemas/integration';
 import {
 	inviteMemberSchema,
 	memberIdSchema,
 	renameTeamSchema,
-	updateRoleSchema
+	updateRoleSchema,
+	updateTeamLanguageSchema
 } from '$lib/schemas/team';
 import { shareIdSchema, shareTargetSchema } from '$lib/schemas/share';
 import { auth } from '$lib/server/auth';
 import { authErrorMessage } from '$lib/server/auth-error';
 import { db } from '$lib/server/db';
-import { calendarShare, invitation, member, organization, user } from '$lib/server/db/schema';
+import {
+	calendarShare,
+	integrationConnection,
+	invitation,
+	member,
+	organization,
+	user
+} from '$lib/server/db/schema';
+import {
+	feedUrl,
+	getOrCreateFeedToken,
+	regenerateFeedToken
+} from '$lib/server/integrations/feed-tokens';
+import { testMessage } from '$lib/server/integrations/message';
+import { deliverToConnection, isAllowedWebhookUrl } from '$lib/server/integrations/webhooks';
 import { notifyShareCreated } from '$lib/server/notifications';
 import { createShare, shareNameMaps, type ShareEntity } from '$lib/server/sharing';
-import type { Actions, PageServerLoad } from './$types';
+import type { Actions, PageServerLoad, RequestEvent } from './$types';
 
 function requireUser(locals: App.Locals) {
 	if (!locals.user) throw kitRedirect(303, '/login');
@@ -62,10 +79,11 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const currentUser = requireUser(locals);
 	const membership = await requireMembership(currentUser.id, params.id);
 	const [team] = await db
-		.select({ id: organization.id, name: organization.name })
+		.select({ id: organization.id, name: organization.name, locale: organization.locale })
 		.from(organization)
 		.where(eq(organization.id, params.id));
 	if (!team) error(404);
+	const teamLocale = isLocale(team.locale) ? team.locale : baseLocale;
 	const [members, pendingInvitations, teamShares, allTeams] = await Promise.all([
 		db
 			.select({
@@ -104,6 +122,26 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		superValidate({ name: team.name }, zod4(renameTeamSchema), { id: 'rename' }),
 		superValidate(zod4(shareTargetSchema), { id: 'share' })
 	]);
+	const canManage = membership.role === 'owner' || membership.role === 'admin';
+	let integrations = null;
+	if (canManage) {
+		const [connections, feedToken, connectionForm] = await Promise.all([
+			db
+				.select({
+					id: integrationConnection.id,
+					provider: integrationConnection.provider,
+					label: integrationConnection.label,
+					consecutiveFailures: integrationConnection.consecutiveFailures,
+					lastFailureAt: integrationConnection.lastFailureAt
+				})
+				.from(integrationConnection)
+				.where(eq(integrationConnection.orgId, params.id))
+				.orderBy(integrationConnection.createdAt),
+			getOrCreateFeedToken({ type: 'org', id: params.id }),
+			superValidate(zod4(addConnectionSchema), { id: 'connection' })
+		]);
+		integrations = { connections, feedUrl: feedUrl(feedToken), connectionForm, teamLocale };
+	}
 	return {
 		team,
 		members,
@@ -114,11 +152,20 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		myRole: membership.role,
 		inviteForm,
 		renameForm,
-		shareForm
+		shareForm,
+		integrations
 	};
 };
 
 const teamPath = (id: string) => `/app/teams/${id}`;
+
+/**
+ * Flash a message in place instead of redirecting, so the page keeps its scroll
+ * position after a mutation. Enhanced forms apply the result without navigating.
+ */
+function flash(event: RequestEvent, message: App.PageData['flash']) {
+	setFlash(message, event);
+}
 
 export const actions: Actions = {
 	invite: async (event) => {
@@ -139,12 +186,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_invite_sent() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_invite_sent() });
+		return { form };
 	},
 
 	// requireManager is the first layer; better-auth's removeMember/updateMemberRole are the
@@ -162,12 +205,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_member_removed() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_member_removed() });
+		return { form };
 	},
 
 	// See removeMember above: better-auth enforces owner-immutability and org-scoped memberIds.
@@ -188,12 +227,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_role_updated() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_role_updated() });
+		return { form };
 	},
 
 	transferOwnership: async (event) => {
@@ -217,12 +252,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_transferred() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_transferred() });
+		return { form };
 	},
 
 	rename: async (event) => {
@@ -239,7 +270,27 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.team_renamed() }, event);
+		flash(event, { type: 'success', message: m.team_renamed() });
+		return { form };
+	},
+
+	updateLanguage: async (event) => {
+		const form = await superValidate(event.request, zod4(updateTeamLanguageSchema), {
+			id: 'language'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		try {
+			await auth.api.updateOrganization({
+				body: { organizationId: event.params.id, data: { locale: form.data.locale } },
+				headers: event.request.headers
+			});
+		} catch (err) {
+			return setError(form, 'locale', authErrorMessage(err));
+		}
+		flash(event, { type: 'success', message: m.team_language_saved() });
+		return { form };
 	},
 
 	deleteTeam: async (event) => {
@@ -312,20 +363,12 @@ export const actions: Actions = {
 			.where(eq(organization.id, event.params.id));
 		const created = await createShare({ type: 'org', id: event.params.id }, target, currentUser.id);
 		if (created === 'duplicate') {
-			redirect(
-				303,
-				teamPath(event.params.id),
-				{ type: 'error', message: m.share_duplicate() },
-				event
-			);
+			flash(event, { type: 'error', message: m.share_duplicate() });
+			return { form };
 		}
 		await notifyShareCreated(created.id, team?.name ?? '', target);
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.share_created() },
-			event
-		);
+		flash(event, { type: 'success', message: m.share_created() });
+		return { form };
 	},
 
 	revokeShare: async (event) => {
@@ -340,11 +383,86 @@ export const actions: Actions = {
 			)
 			.returning({ id: calendarShare.id });
 		if (deleted.length === 0) error(404);
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.share_revoked() },
-			event
+		flash(event, { type: 'success', message: m.share_revoked() });
+		return { form };
+	},
+
+	addConnection: async (event) => {
+		const form = await superValidate(event.request, zod4(addConnectionSchema), {
+			id: 'connection'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		if (!isAllowedWebhookUrl(form.data.provider, form.data.webhookUrl)) {
+			return setError(form, 'webhookUrl', m.integrations_invalid_webhook_url());
+		}
+		await db.insert(integrationConnection).values({
+			orgId: event.params.id,
+			provider: form.data.provider,
+			webhookUrl: form.data.webhookUrl,
+			label: form.data.label === '' ? null : form.data.label,
+			createdById: currentUser.id
+		});
+		flash(event, { type: 'success', message: m.integrations_added() });
+		return { form };
+	},
+
+	removeConnection: async (event) => {
+		const form = await superValidate(event.request, zod4(connectionIdSchema), {
+			id: 'connection-id'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		const deleted = await db
+			.delete(integrationConnection)
+			.where(
+				and(
+					eq(integrationConnection.id, form.data.id),
+					eq(integrationConnection.orgId, event.params.id)
+				)
+			)
+			.returning({ id: integrationConnection.id });
+		if (deleted.length === 0) error(404);
+		flash(event, { type: 'success', message: m.integrations_removed() });
+		return { form };
+	},
+
+	testConnection: async (event) => {
+		const form = await superValidate(event.request, zod4(connectionIdSchema), {
+			id: 'connection-id'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		const [row] = await db
+			.select({ connection: integrationConnection, orgLocale: organization.locale })
+			.from(integrationConnection)
+			.innerJoin(organization, eq(integrationConnection.orgId, organization.id))
+			.where(
+				and(
+					eq(integrationConnection.id, form.data.id),
+					eq(integrationConnection.orgId, event.params.id)
+				)
+			);
+		if (!row) error(404);
+		const teamLocale = isLocale(row.orgLocale) ? row.orgLocale : baseLocale;
+		const ok = await deliverToConnection(row.connection, testMessage(teamLocale));
+		flash(
+			event,
+			ok
+				? { type: 'success', message: m.integrations_test_sent() }
+				: { type: 'error', message: m.integrations_test_failed() }
 		);
+		return { form };
+	},
+
+	regenerateFeed: async (event) => {
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		await regenerateFeedToken({ type: 'org', id: event.params.id });
+		flash(event, { type: 'success', message: m.feed_regenerated() });
+		return {};
 	}
 };

@@ -35,7 +35,7 @@ describe('signupSchema', () => {
 			locale: 'xx'
 		});
 		expect(result.timezone).toBe('UTC');
-		expect(result.locale).toBe('en');
+		expect(result.locale).toBe('en-GB');
 	});
 });
 
@@ -43,7 +43,7 @@ describe('profileSchema', () => {
 	it('rejects an invalid timezone instead of falling back', () => {
 		const result = profileSchema.safeParse({
 			name: 'Ada',
-			locale: 'en',
+			locale: 'en-GB',
 			timezone: 'Not/AZone'
 		});
 		expect(result.success).toBe(false);
