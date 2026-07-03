@@ -6,13 +6,14 @@
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import {
 		Calendar,
 		type CalendarEvent,
 		type EventChange,
 		type RangeSelection
 	} from '$lib/components/calendar';
-	import { formatTimeOfDay, toCalendarEvent, type EventRecord } from '$lib/events';
+	import { formatTimeOfDay, toCalendarEvent } from '$lib/events';
 	import { m } from '$lib/paraglide/messages.js';
 	import { moveEventSchema } from '$lib/schemas/event';
 	import EventDialog from './event-dialog.svelte';
@@ -22,8 +23,19 @@
 	let view = $state(data.view);
 	// svelte-ignore state_referenced_locally
 	let date = $state(parseDate(data.date));
+	// svelte-ignore state_referenced_locally
+	let filter = $state(data.filter);
+
+	const filterLabels = {
+		all: m.calendar_filter_all(),
+		mine: m.calendar_filter_mine(),
+		teams: m.calendar_filter_teams(),
+		shared: m.calendar_filter_shared()
+	} as const;
 
 	let dialog: ReturnType<typeof EventDialog> | undefined = $state();
+
+	type Record = (typeof data.records)[number];
 
 	// In-flight move/resize shown at its dropped position: the calendar reverts its
 	// drag preview on pointerup, and the persisted change only arrives with the next
@@ -31,19 +43,20 @@
 	// Tied to the records array it was created against, so it self-disables as soon
 	// as fresh records (which already contain the persisted change) arrive.
 	// $state.raw: deep-proxying would break the identity check against data.records.
-	let pendingMove = $state.raw<{ records: unknown; event: CalendarEvent<EventRecord> } | null>(
-		null
-	);
+	let pendingMove = $state.raw<{ records: unknown; event: CalendarEvent<Record> } | null>(null);
 
 	const events = $derived(
 		data.records.map((record) => {
 			const event = toCalendarEvent(record, data.user.timezone);
+			if (record.ownerId !== data.user.id) {
+				return { ...event, title: `${record.ownerName} · ${event.title}`, editable: false };
+			}
 			return pendingMove?.records === data.records && pendingMove.event.id === event.id
 				? pendingMove.event
 				: event;
 		})
 	);
-	const actionParams = $derived(`&view=${view}&date=${date.toString()}`);
+	const actionParams = $derived(`&view=${view}&date=${date.toString()}&filter=${filter}`);
 
 	// svelte-ignore state_referenced_locally
 	const {
@@ -87,15 +100,15 @@
 		}
 	}
 
-	function handleEventClick(event: CalendarEvent<EventRecord>) {
-		if (event.data) dialog?.openEdit(event.data);
+	function handleEventClick(event: CalendarEvent<Record>) {
+		if (event.data && event.data.ownerId === data.user.id) dialog?.openEdit(event.data);
 	}
 
-	async function handleEventChange(event: CalendarEvent<EventRecord>, change: EventChange) {
+	async function handleEventChange(event: CalendarEvent<Record>, change: EventChange) {
 		pendingMove = {
 			records: data.records,
 			// Safe cast: the component guarantees change.allDay matches event.allDay.
-			event: { ...event, ...change } as CalendarEvent<EventRecord>
+			event: { ...event, ...change } as CalendarEvent<Record>
 		};
 		$moveForm.id = event.id;
 		$moveForm.allDay = change.allDay;
@@ -106,7 +119,7 @@
 	}
 
 	$effect(() => {
-		const params = new URLSearchParams({ view, date: date.toString() });
+		const params = new URLSearchParams({ view, date: date.toString(), filter });
 		// Query-only relative navigation has no resolve()-compatible form.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(`?${params}`, { replaceState: true, keepFocus: true, noScroll: true });
@@ -125,6 +138,19 @@
 	onEventChange={handleEventChange}
 >
 	{#snippet headerActions()}
+		<ToggleGroup.Root
+			type="single"
+			value={filter}
+			onValueChange={(value) => {
+				if (value) filter = value as typeof filter;
+			}}
+			variant="outline"
+			aria-label={m.calendar_filter_label()}
+		>
+			{#each Object.entries(filterLabels) as [key, label] (key)}
+				<ToggleGroup.Item value={key} aria-label={label}>{label}</ToggleGroup.Item>
+			{/each}
+		</ToggleGroup.Root>
 		<Button onclick={() => dialog?.openCreate()}>{m.calendar_event_add()}</Button>
 	{/snippet}
 </Calendar>

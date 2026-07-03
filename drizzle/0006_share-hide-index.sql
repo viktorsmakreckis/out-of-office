@@ -1,0 +1,1 @@
+CREATE INDEX "calendar_share_hide_share_id_idx" ON "calendar_share_hide" USING btree ("share_id");
