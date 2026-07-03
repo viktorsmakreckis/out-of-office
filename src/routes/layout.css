@@ -74,6 +74,17 @@
 	--sidebar-ring: oklch(0.556 0 0);
 }
 
+@theme {
+	--color-sunset-50: oklch(0.985 0.012 75);
+	--color-sunset-100: oklch(0.955 0.035 70);
+	--color-sunset-200: oklch(0.9 0.07 62);
+	--color-sunset-300: oklch(0.84 0.11 68);
+	--color-sunset-400: oklch(0.75 0.155 48);
+	--color-sunset-500: oklch(0.66 0.19 38);
+	--color-sunset-600: oklch(0.58 0.18 33);
+	--color-sunset-700: oklch(0.5 0.16 30);
+}
+
 @theme inline {
 	--font-sans: 'Inter Variable', sans-serif;
 	--color-sidebar-ring: var(--sidebar-ring);
