@@ -1,11 +1,16 @@
 <script lang="ts">
+	import LandingFooter from '$lib/components/landing/landing-footer.svelte';
+	import LandingNav from '$lib/components/landing/landing-nav.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 </script>
 
 <svelte:head>
-	<title>{m.app_name()}</title>
+	<title>{m.app_name()} · {m.landing_meta_title()}</title>
+	<meta name="description" content={m.landing_meta_description()} />
 </svelte:head>
 
-<main class="flex min-h-svh items-center justify-center">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.app_name()}</h1>
-</main>
+<div class="flex min-h-svh flex-col">
+	<LandingNav />
+	<main class="flex-1"></main>
+	<LandingFooter />
+</div>
