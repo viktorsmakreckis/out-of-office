@@ -42,7 +42,7 @@
 	>
 		<div
 			aria-hidden="true"
-			class="absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,var(--color-sunset-300),var(--color-sunset-500)_55%,transparent_72%)] opacity-80 blur-2xl sm:-top-36 sm:size-[28rem]"
+			class="pointer-events-none absolute -top-24 left-1/2 -z-10 size-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,var(--color-sunset-300),var(--color-sunset-500)_55%,transparent_72%)] opacity-80 blur-2xl sm:-top-36 sm:size-[28rem]"
 		></div>
 		<div class="relative overflow-hidden rounded-xl border shadow-2xl">
 			<div class="flex h-8 items-center gap-1.5 border-b bg-muted px-3" aria-hidden="true">
