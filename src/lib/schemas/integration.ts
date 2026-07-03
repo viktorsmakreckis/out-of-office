@@ -18,3 +18,8 @@ export const addConnectionSchema = z.object({
 export const connectionIdSchema = z.object({
 	id: z.string().min(1, { error: () => m.error_generic() })
 });
+
+export const updateConnectionNotifySchema = z.object({
+	id: z.string().min(1, { error: () => m.error_generic() }),
+	notifyOoo: z.enum(['true', 'false']).transform((value) => value === 'true')
+});

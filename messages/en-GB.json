@@ -315,6 +315,8 @@
 	"integrations_invalid_webhook_url": "This is not a valid webhook URL for the selected provider.",
 	"integrations_failing": "Failing since {date}",
 	"integrations_empty": "No connections yet.",
+	"integrations_notify_ooo_label": "Out-of-office updates",
+	"integrations_prefs_saved": "Channel preferences saved.",
 	"feed_title": "Calendar feed",
 	"feed_team_description": "Subscribe to this URL from Outlook, Google Calendar, or Apple Calendar to see this team's out-of-office events.",
 	"feed_user_description": "Subscribe to this URL from Outlook, Google Calendar, or Apple Calendar to see your out-of-office events.",

@@ -315,6 +315,8 @@
 	"integrations_invalid_webhook_url": "Ceci n'est pas une URL de webhook valide pour ce fournisseur.",
 	"integrations_failing": "En échec depuis {date}",
 	"integrations_empty": "Aucune connexion pour le moment.",
+	"integrations_notify_ooo_label": "Mises à jour d'absence",
+	"integrations_prefs_saved": "Préférences du canal enregistrées.",
 	"feed_title": "Flux de calendrier",
 	"feed_team_description": "Abonnez-vous à cette URL depuis Outlook, Google Agenda ou Apple Calendar pour voir les absences de cette équipe.",
 	"feed_user_description": "Abonnez-vous à cette URL depuis Outlook, Google Agenda ou Apple Calendar pour voir vos absences.",

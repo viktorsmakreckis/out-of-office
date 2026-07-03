@@ -5,7 +5,11 @@ import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
 import { baseLocale, isLocale } from '$lib/paraglide/runtime';
-import { addConnectionSchema, connectionIdSchema } from '$lib/schemas/integration';
+import {
+	addConnectionSchema,
+	connectionIdSchema,
+	updateConnectionNotifySchema
+} from '$lib/schemas/integration';
 import {
 	inviteMemberSchema,
 	memberIdSchema,
@@ -131,6 +135,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 					id: integrationConnection.id,
 					provider: integrationConnection.provider,
 					label: integrationConnection.label,
+					notifyOoo: integrationConnection.notifyOoo,
 					consecutiveFailures: integrationConnection.consecutiveFailures,
 					lastFailureAt: integrationConnection.lastFailureAt
 				})
@@ -426,6 +431,28 @@ export const actions: Actions = {
 			.returning({ id: integrationConnection.id });
 		if (deleted.length === 0) error(404);
 		flash(event, { type: 'success', message: m.integrations_removed() });
+		return { form };
+	},
+
+	updateConnectionNotify: async (event) => {
+		const form = await superValidate(event.request, zod4(updateConnectionNotifySchema), {
+			id: 'connection-notify'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		const updated = await db
+			.update(integrationConnection)
+			.set({ notifyOoo: form.data.notifyOoo })
+			.where(
+				and(
+					eq(integrationConnection.id, form.data.id),
+					eq(integrationConnection.orgId, event.params.id)
+				)
+			)
+			.returning({ id: integrationConnection.id });
+		if (updated.length === 0) error(404);
+		flash(event, { type: 'success', message: m.integrations_prefs_saved() });
 		return { form };
 	},
 

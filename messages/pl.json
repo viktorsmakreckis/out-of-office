@@ -315,6 +315,8 @@
 	"integrations_invalid_webhook_url": "To nie jest prawidłowy adres webhooka dla wybranego dostawcy.",
 	"integrations_failing": "Nie działa od {date}",
 	"integrations_empty": "Brak połączeń.",
+	"integrations_notify_ooo_label": "Aktualizacje nieobecności",
+	"integrations_prefs_saved": "Zapisano preferencje kanału.",
 	"feed_title": "Kanał kalendarza",
 	"feed_team_description": "Subskrybuj ten adres w Outlooku, Kalendarzu Google lub Apple Calendar, aby widzieć nieobecności tego zespołu.",
 	"feed_user_description": "Subskrybuj ten adres w Outlooku, Kalendarzu Google lub Apple Calendar, aby widzieć swoje nieobecności.",
