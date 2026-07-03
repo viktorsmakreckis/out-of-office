@@ -2,10 +2,10 @@
 	import BellRingIcon from '@lucide/svelte/icons/bell-ring';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import { m } from '$lib/paraglide/messages.js';
-	import boardDark from '$lib/assets/landing/board-dark.png';
-	import boardLight from '$lib/assets/landing/board-light.png';
-	import sharingDark from '$lib/assets/landing/sharing-dark.png';
-	import sharingLight from '$lib/assets/landing/sharing-light.png';
+	import boardDark from '$lib/assets/landing/board-dark.webp';
+	import boardLight from '$lib/assets/landing/board-light.webp';
+	import sharingDark from '$lib/assets/landing/sharing-dark.webp';
+	import sharingLight from '$lib/assets/landing/sharing-light.webp';
 </script>
 
 <section id="features" class="scroll-mt-20 px-4 py-20 sm:px-6">

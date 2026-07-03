@@ -4,8 +4,8 @@
 	import ReplyIcon from '@lucide/svelte/icons/reply';
 	import { Button } from '$lib/components/ui/button';
 	import { m } from '$lib/paraglide/messages.js';
-	import calendarDark from '$lib/assets/landing/calendar-dark.png';
-	import calendarLight from '$lib/assets/landing/calendar-light.png';
+	import calendarDark from '$lib/assets/landing/calendar-dark.webp';
+	import calendarLight from '$lib/assets/landing/calendar-light.webp';
 </script>
 
 <section class="overflow-hidden px-4 pt-16 pb-10 sm:px-6 sm:pt-24">
