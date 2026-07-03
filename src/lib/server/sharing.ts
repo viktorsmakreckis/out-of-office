@@ -1,6 +1,12 @@
 import { and, eq, inArray, or } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { calendarShare, calendarShareHide, member, user } from '$lib/server/db/schema';
+import {
+	calendarShare,
+	calendarShareHide,
+	member,
+	organization,
+	user
+} from '$lib/server/db/schema';
 
 export type MembershipRow = { organizationId: string; userId: string };
 export type ShareRow = {
@@ -145,6 +151,28 @@ export async function getVisibleOwners(viewerId: string): Promise<VisibleOwner[]
 		.from(user)
 		.where(inArray(user.id, [...owners.keys()]));
 	return users.map((u) => ({ ...u, via: owners.get(u.id)! }));
+}
+
+/** Id→name lookup maps for rendering share rows ("Alice", "Team Design"). */
+export async function shareNameMaps(
+	userIds: string[],
+	orgIds: string[]
+): Promise<{ userNames: Map<string, string>; orgNames: Map<string, string> }> {
+	const [users, orgs] = await Promise.all([
+		userIds.length
+			? db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, userIds))
+			: [],
+		orgIds.length
+			? db
+					.select({ id: organization.id, name: organization.name })
+					.from(organization)
+					.where(inArray(organization.id, orgIds))
+			: []
+	]);
+	return {
+		userNames: new Map(users.map((u) => [u.id, u.name])),
+		orgNames: new Map(orgs.map((o) => [o.id, o.name]))
+	};
 }
 
 export type Recipient = { id: string; email: string; name: string; locale: string };

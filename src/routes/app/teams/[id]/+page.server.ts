@@ -1,5 +1,5 @@
 import { error, fail, redirect as kitRedirect } from '@sveltejs/kit';
-import { and, desc, eq, gt, inArray } from 'drizzle-orm';
+import { and, desc, eq, gt } from 'drizzle-orm';
 import { redirect } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
@@ -16,7 +16,7 @@ import { authErrorMessage } from '$lib/server/auth-error';
 import { db } from '$lib/server/db';
 import { calendarShare, invitation, member, organization, user } from '$lib/server/db/schema';
 import { notifyShareCreated } from '$lib/server/notifications';
-import { createShare, type ShareEntity } from '$lib/server/sharing';
+import { createShare, shareNameMaps, type ShareEntity } from '$lib/server/sharing';
 import type { Actions, PageServerLoad } from './$types';
 
 function requireUser(locals: App.Locals) {
@@ -43,21 +43,10 @@ function requireManager(membership: { role: string }) {
 async function describeShareTargets(
 	shares: (typeof calendarShare.$inferSelect)[]
 ): Promise<{ id: string; label: string; pending: boolean }[]> {
-	const userIds = shares.flatMap((s) => (s.targetUserId ? [s.targetUserId] : []));
-	const orgIds = shares.flatMap((s) => (s.targetOrgId ? [s.targetOrgId] : []));
-	const [users, orgs] = await Promise.all([
-		userIds.length
-			? db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, userIds))
-			: [],
-		orgIds.length
-			? db
-					.select({ id: organization.id, name: organization.name })
-					.from(organization)
-					.where(inArray(organization.id, orgIds))
-			: []
-	]);
-	const userNames = new Map(users.map((u) => [u.id, u.name]));
-	const orgNames = new Map(orgs.map((o) => [o.id, o.name]));
+	const { userNames, orgNames } = await shareNameMaps(
+		shares.flatMap((s) => (s.targetUserId ? [s.targetUserId] : [])),
+		shares.flatMap((s) => (s.targetOrgId ? [s.targetOrgId] : []))
+	);
 	return shares.map((share) => ({
 		id: share.id,
 		pending: share.targetEmail !== null,

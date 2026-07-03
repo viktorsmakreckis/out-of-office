@@ -14,31 +14,12 @@ import {
 	user
 } from '$lib/server/db/schema';
 import { notifyShareCreated } from '$lib/server/notifications';
-import { createShare, type ShareEntity } from '$lib/server/sharing';
+import { createShare, shareNameMaps, type ShareEntity } from '$lib/server/sharing';
 import type { Actions, PageServerLoad } from './$types';
 
 function requireUser(locals: App.Locals) {
 	if (!locals.user) throw kitRedirect(303, '/login');
 	return locals.user;
-}
-
-/** Name lookup maps for rendering share rows. */
-async function nameMaps(userIds: string[], orgIds: string[]) {
-	const [users, orgs] = await Promise.all([
-		userIds.length
-			? db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, userIds))
-			: [],
-		orgIds.length
-			? db
-					.select({ id: organization.id, name: organization.name })
-					.from(organization)
-					.where(inArray(organization.id, orgIds))
-			: []
-	]);
-	return {
-		userNames: new Map(users.map((u) => [u.id, u.name])),
-		orgNames: new Map(orgs.map((o) => [o.id, o.name]))
-	};
 }
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -79,7 +60,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			.orderBy(desc(calendarShare.createdAt))
 	]);
 
-	const { userNames, orgNames } = await nameMaps(
+	const { userNames, orgNames } = await shareNameMaps(
 		[
 			...given.flatMap((s) => (s.targetUserId ? [s.targetUserId] : [])),
 			...received.flatMap((r) => (r.share.sharerUserId ? [r.share.sharerUserId] : []))
