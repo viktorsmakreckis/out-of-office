@@ -185,9 +185,9 @@ export const integrationConnection = pgTable(
 		kind: integrationKindEnum('kind').notNull().default('webhook'),
 		webhookUrl: text('webhook_url').notNull(),
 		label: text('label'),
-		createdById: text('created_by_id')
-			.notNull()
-			.references(() => user.id, { onDelete: 'cascade' }),
+		// Team-owned resource: keep the connection alive when its creator's account is
+		// deleted (set null rather than cascade). Nullable so the FK can null out.
+		createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
 		consecutiveFailures: integer('consecutive_failures').notNull().default(0),
 		lastFailureAt: timestamp('last_failure_at', { withTimezone: true }),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()

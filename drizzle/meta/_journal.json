@@ -57,6 +57,13 @@
       "when": 1783095449032,
       "tag": "0007_integrations",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783101026899,
+      "tag": "0008_integration_connection_created_by_set_null",
+      "breakpoints": true
     }
   ]
 }
