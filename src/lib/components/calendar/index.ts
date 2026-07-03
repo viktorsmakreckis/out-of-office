@@ -1,5 +1,5 @@
 export { default as Calendar } from './calendar.svelte';
-export { EVENT_COLORS } from './core/types.js';
+export { daysBetween, EVENT_COLORS, eventDateSpan } from './core/types.js';
 export type {
 	AllDayEvent,
 	CalendarEvent,
