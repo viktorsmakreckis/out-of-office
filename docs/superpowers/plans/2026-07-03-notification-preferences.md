@@ -24,10 +24,12 @@
 ### Task 1: Schema — `notification_preference` table + `notify_ooo` column + migration
 
 **Files:**
+
 - Modify: `src/lib/server/db/schema.ts` (append after the `notification` table, ~line 160; add column inside `integration_connection`, ~line 192)
 - Create: `drizzle/0010_notification_preferences.sql` (generated)
 
 **Interfaces:**
+
 - Produces: Drizzle table `notificationPreference` with columns `userId, oooInApp, oooEmail, sharedInApp, sharedEmail, updatedAt`; new column `integrationConnection.notifyOoo` (boolean, not null, default true).
 
 - [ ] **Step 1: Add the `notifyOoo` column to `integration_connection`**
@@ -93,10 +95,12 @@ git commit -m "feat(db): notification_preference table and connection notify_ooo
 ### Task 2: Preference resolver + pure channel-split helper (TDD)
 
 **Files:**
+
 - Create: `src/lib/server/notification-preferences.ts`
 - Create: `src/lib/server/notification-preferences.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `notificationPreference` table (Task 1); `db` from `$lib/server/db`.
 - Produces:
   - `type ChannelPrefs = { oooInApp: boolean; oooEmail: boolean; sharedInApp: boolean; sharedEmail: boolean }`
@@ -194,7 +198,9 @@ export function recipientsForChannel<T extends { id: string }>(
 	prefs: Map<string, ChannelPrefs>,
 	channel: keyof ChannelPrefs
 ): T[] {
-	return recipients.filter((recipient) => (prefs.get(recipient.id) ?? DEFAULT_CHANNEL_PREFS)[channel]);
+	return recipients.filter(
+		(recipient) => (prefs.get(recipient.id) ?? DEFAULT_CHANNEL_PREFS)[channel]
+	);
 }
 
 /** id → prefs for the given users. Users with no stored row are simply absent from the map. */
@@ -249,10 +255,12 @@ git commit -m "feat: channel preference resolver and pure split helper"
 ### Task 3: Enforce preferences in the delivery pipeline
 
 **Files:**
+
 - Modify: `src/lib/server/notifications.ts` (`notifyRecipients`, `notifyShareCreated`, `notifyEventChange`)
 - Modify: `src/lib/server/integrations/webhooks.ts` (`postEventToTeamChannels` WHERE clause)
 
 **Interfaces:**
+
 - Consumes: `getUserChannelPrefs`, `recipientsForChannel` (Task 2); `notifyOoo` column (Task 1).
 - Produces: no new exported symbols; behavior change only.
 
@@ -292,7 +300,9 @@ async function notifyRecipients(
 	if (inAppRecipients.length > 0) {
 		await db
 			.insert(notification)
-			.values(inAppRecipients.map((recipient) => ({ userId: recipient.id, type, actorName, data })));
+			.values(
+				inAppRecipients.map((recipient) => ({ userId: recipient.id, type, actorName, data }))
+			);
 	}
 	const results = await Promise.allSettled(
 		emailRecipients.map((recipient) => sendEmail(recipient.email, emailFor(recipient)))
@@ -308,25 +318,25 @@ async function notifyRecipients(
 In `src/lib/server/notifications.ts`, in `notifyShareCreated` (the non-email branch, lines 87-90), replace:
 
 ```ts
-	const recipients = await resolveTargetRecipients(target);
-	await notifyRecipients(recipients, 'calendar_shared', sharerName, { shareId }, (recipient) =>
-		calendarSharedEmail(sharerName, notificationsUrl(), recipientLocale(recipient))
-	);
+const recipients = await resolveTargetRecipients(target);
+await notifyRecipients(recipients, 'calendar_shared', sharerName, { shareId }, (recipient) =>
+	calendarSharedEmail(sharerName, notificationsUrl(), recipientLocale(recipient))
+);
 ```
 
 with:
 
 ```ts
-	const recipients = await resolveTargetRecipients(target);
-	const prefs = await getUserChannelPrefs(recipients.map((recipient) => recipient.id));
-	await notifyRecipients(
-		recipientsForChannel(recipients, prefs, 'sharedInApp'),
-		recipientsForChannel(recipients, prefs, 'sharedEmail'),
-		'calendar_shared',
-		sharerName,
-		{ shareId },
-		(recipient) => calendarSharedEmail(sharerName, notificationsUrl(), recipientLocale(recipient))
-	);
+const recipients = await resolveTargetRecipients(target);
+const prefs = await getUserChannelPrefs(recipients.map((recipient) => recipient.id));
+await notifyRecipients(
+	recipientsForChannel(recipients, prefs, 'sharedInApp'),
+	recipientsForChannel(recipients, prefs, 'sharedEmail'),
+	'calendar_shared',
+	sharerName,
+	{ shareId },
+	(recipient) => calendarSharedEmail(sharerName, notificationsUrl(), recipientLocale(recipient))
+);
 ```
 
 - [ ] **Step 4: Apply OOO prefs in `notifyEventChange`**
@@ -334,32 +344,32 @@ with:
 In `src/lib/server/notifications.ts`, in `notifyEventChange` (lines 116-138), replace the body from `const recipients = ...` through the `enqueueEventDelivery` call with:
 
 ```ts
-	const recipients = await getEventAudience(actor.id);
-	const prefs = await getUserChannelPrefs(recipients.map((recipient) => recipient.id));
-	const inAppRecipients = recipientsForChannel(recipients, prefs, 'oooInApp');
-	const emailRecipients = recipientsForChannel(recipients, prefs, 'oooEmail');
-	if (inAppRecipients.length > 0) {
-		await db.insert(notification).values(
-			inAppRecipients.map((recipient) => ({
-				userId: recipient.id,
-				type: eventNotificationType(kind),
-				actorName: actor.name,
-				data: { eventTitle, eventType } satisfies EventChangeData
-			}))
-		);
-	}
-	await enqueueEventDelivery({
-		actorId: actor.id,
-		actorName: actor.name,
-		kind,
-		title: eventTitle,
-		type: eventType,
-		range,
-		emailRecipients: emailRecipients.map((recipient) => ({
-			email: recipient.email,
-			locale: recipient.locale
+const recipients = await getEventAudience(actor.id);
+const prefs = await getUserChannelPrefs(recipients.map((recipient) => recipient.id));
+const inAppRecipients = recipientsForChannel(recipients, prefs, 'oooInApp');
+const emailRecipients = recipientsForChannel(recipients, prefs, 'oooEmail');
+if (inAppRecipients.length > 0) {
+	await db.insert(notification).values(
+		inAppRecipients.map((recipient) => ({
+			userId: recipient.id,
+			type: eventNotificationType(kind),
+			actorName: actor.name,
+			data: { eventTitle, eventType } satisfies EventChangeData
 		}))
-	});
+	);
+}
+await enqueueEventDelivery({
+	actorId: actor.id,
+	actorName: actor.name,
+	kind,
+	title: eventTitle,
+	type: eventType,
+	range,
+	emailRecipients: emailRecipients.map((recipient) => ({
+		email: recipient.email,
+		locale: recipient.locale
+	}))
+});
 ```
 
 - [ ] **Step 5: Add the import**
@@ -390,12 +400,14 @@ git commit -m "feat: apply channel preferences when fanning out notifications"
 ### Task 4: User settings — Notifications switch grid
 
 **Files:**
+
 - Create: `src/lib/schemas/notification.ts`
 - Modify: `src/routes/app/settings/+page.server.ts` (load + new `notifications` action)
 - Modify: `src/routes/app/settings/+page.svelte` (new card)
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 
 **Interfaces:**
+
 - Consumes: `getChannelPrefs`, `upsertChannelPrefs`, `type ChannelPrefs` (Task 2).
 - Produces: `notificationPreferencesSchema` (zod object of 4 booleans); a `notifications` form action; page data field `notificationsForm`.
 
@@ -468,33 +480,33 @@ import { getChannelPrefs, upsertChannelPrefs } from '$lib/server/notification-pr
 In `load`, extend the `Promise.all` array with a fifth `superValidate` and read the prefs. Change the destructuring and the array:
 
 ```ts
-	const channelPrefs = await getChannelPrefs(user.id);
-	const [profileForm, emailForm, passwordForm, deleteForm, notificationsForm] = await Promise.all([
-		superValidate(
-			{
-				name: user.name,
-				locale: isLocale(user.locale) ? user.locale : baseLocale,
-				timezone: user.timezone
-			},
-			zod4(profileSchema),
-			{ id: 'profile', errors: false }
-		),
-		superValidate(zod4(changeEmailSchema), { id: 'changeEmail' }),
-		superValidate(zod4(changePasswordSchema), { id: 'changePassword' }),
-		superValidate(zod4(deleteAccountSchema), { id: 'deleteAccount' }),
-		superValidate(channelPrefs, zod4(notificationPreferencesSchema), {
-			id: 'notifications',
-			errors: false
-		})
-	]);
-	return {
-		profileForm,
-		emailForm,
-		passwordForm,
-		deleteForm,
-		notificationsForm,
-		feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'user', id: user.id }))
-	};
+const channelPrefs = await getChannelPrefs(user.id);
+const [profileForm, emailForm, passwordForm, deleteForm, notificationsForm] = await Promise.all([
+	superValidate(
+		{
+			name: user.name,
+			locale: isLocale(user.locale) ? user.locale : baseLocale,
+			timezone: user.timezone
+		},
+		zod4(profileSchema),
+		{ id: 'profile', errors: false }
+	),
+	superValidate(zod4(changeEmailSchema), { id: 'changeEmail' }),
+	superValidate(zod4(changePasswordSchema), { id: 'changePassword' }),
+	superValidate(zod4(deleteAccountSchema), { id: 'deleteAccount' }),
+	superValidate(channelPrefs, zod4(notificationPreferencesSchema), {
+		id: 'notifications',
+		errors: false
+	})
+]);
+return {
+	profileForm,
+	emailForm,
+	passwordForm,
+	deleteForm,
+	notificationsForm,
+	feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'user', id: user.id }))
+};
 ```
 
 - [ ] **Step 4: Add the `notifications` action**
@@ -528,63 +540,63 @@ In `src/routes/app/settings/+page.svelte`:
 Add imports in the `<script>` block:
 
 ```ts
-	import { Switch } from '$lib/components/ui/switch';
-	import { notificationPreferencesSchema } from '$lib/schemas/notification';
+import { Switch } from '$lib/components/ui/switch';
+import { notificationPreferencesSchema } from '$lib/schemas/notification';
 ```
 
 Add a superForm instance alongside the others (after the `passwordForm` block):
 
 ```ts
-	// svelte-ignore state_referenced_locally
-	const {
-		form: notificationsForm,
-		submitting: notificationsSubmitting,
-		enhance: notificationsEnhance
-	} = superForm(data.notificationsForm, { validators: zod4Client(notificationPreferencesSchema) });
+// svelte-ignore state_referenced_locally
+const {
+	form: notificationsForm,
+	submitting: notificationsSubmitting,
+	enhance: notificationsEnhance
+} = superForm(data.notificationsForm, { validators: zod4Client(notificationPreferencesSchema) });
 ```
 
 Add the card markup after the Password card and before the Feed card:
 
 ```svelte
-	<Card.Root>
-		<Card.Header>
-			<Card.Title>{m.settings_notifications_title()}</Card.Title>
-			<Card.Description>{m.settings_notifications_description()}</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<form method="POST" action="?/notifications" use:notificationsEnhance>
-				<Field.Group>
-					<div class="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 gap-y-4">
-						<span></span>
-						<span class="text-sm text-muted-foreground">
-							{m.settings_notifications_channel_in_app()}
-						</span>
-						<span class="text-sm text-muted-foreground">
-							{m.settings_notifications_channel_email()}
-						</span>
+<Card.Root>
+	<Card.Header>
+		<Card.Title>{m.settings_notifications_title()}</Card.Title>
+		<Card.Description>{m.settings_notifications_description()}</Card.Description>
+	</Card.Header>
+	<Card.Content>
+		<form method="POST" action="?/notifications" use:notificationsEnhance>
+			<Field.Group>
+				<div class="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 gap-y-4">
+					<span></span>
+					<span class="text-sm text-muted-foreground">
+						{m.settings_notifications_channel_in_app()}
+					</span>
+					<span class="text-sm text-muted-foreground">
+						{m.settings_notifications_channel_email()}
+					</span>
 
-						<Label for="pref-ooo-in-app">{m.settings_notifications_ooo_label()}</Label>
-						<Switch id="pref-ooo-in-app" name="oooInApp" bind:checked={$notificationsForm.oooInApp} />
-						<Switch name="oooEmail" bind:checked={$notificationsForm.oooEmail} />
+					<Label for="pref-ooo-in-app">{m.settings_notifications_ooo_label()}</Label>
+					<Switch id="pref-ooo-in-app" name="oooInApp" bind:checked={$notificationsForm.oooInApp} />
+					<Switch name="oooEmail" bind:checked={$notificationsForm.oooEmail} />
 
-						<Label for="pref-shared-in-app">{m.settings_notifications_shared_label()}</Label>
-						<Switch
-							id="pref-shared-in-app"
-							name="sharedInApp"
-							bind:checked={$notificationsForm.sharedInApp}
-						/>
-						<Switch name="sharedEmail" bind:checked={$notificationsForm.sharedEmail} />
-					</div>
-					<div>
-						<Button type="submit" disabled={$notificationsSubmitting}>
-							{#if $notificationsSubmitting}<Spinner />{/if}
-							{m.save()}
-						</Button>
-					</div>
-				</Field.Group>
-			</form>
-		</Card.Content>
-	</Card.Root>
+					<Label for="pref-shared-in-app">{m.settings_notifications_shared_label()}</Label>
+					<Switch
+						id="pref-shared-in-app"
+						name="sharedInApp"
+						bind:checked={$notificationsForm.sharedInApp}
+					/>
+					<Switch name="sharedEmail" bind:checked={$notificationsForm.sharedEmail} />
+				</div>
+				<div>
+					<Button type="submit" disabled={$notificationsSubmitting}>
+						{#if $notificationsSubmitting}<Spinner />{/if}
+						{m.save()}
+					</Button>
+				</div>
+			</Field.Group>
+		</form>
+	</Card.Content>
+</Card.Root>
 ```
 
 `Card`, `Field`, `Button`, `Spinner`, and `Label` are already imported in this file. Add `Label` only if not already imported — check the existing import list first; if `Label` is missing, add `import { Label } from '$lib/components/ui/label';`.
@@ -614,12 +626,14 @@ git commit -m "feat: user notification preferences on settings page"
 ### Task 5: Team settings — per-connection out-of-office toggle
 
 **Files:**
+
 - Modify: `src/lib/schemas/integration.ts` (add `updateConnectionNotifySchema`)
 - Modify: `src/routes/app/teams/[id]/+page.server.ts` (select `notifyOoo`; add `updateConnectionNotify` action)
 - Modify: `src/lib/components/integrations/integrations-card.svelte` (`notifyOoo` in `ConnectionRow`; per-connection switch)
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 
 **Interfaces:**
+
 - Consumes: `notifyOoo` column (Task 1).
 - Produces: `updateConnectionNotifySchema` ({ id: string; notifyOoo: boolean } after transform); a `updateConnectionNotify` form action; `notifyOoo` on each connection row passed to the card.
 
@@ -727,21 +741,21 @@ In `src/lib/components/integrations/integrations-card.svelte`:
 Add `Switch` and `Label` imports:
 
 ```ts
-	import { Switch } from '$lib/components/ui/switch';
-	import { Label } from '$lib/components/ui/label';
+import { Switch } from '$lib/components/ui/switch';
+import { Label } from '$lib/components/ui/label';
 ```
 
 Extend the `ConnectionRow` type with `notifyOoo: boolean;`:
 
 ```ts
-	type ConnectionRow = {
-		id: string;
-		provider: Provider;
-		label: string | null;
-		notifyOoo: boolean;
-		consecutiveFailures: number;
-		lastFailureAt: Date | null;
-	};
+type ConnectionRow = {
+	id: string;
+	provider: Provider;
+	label: string | null;
+	notifyOoo: boolean;
+	consecutiveFailures: number;
+	lastFailureAt: Date | null;
+};
 ```
 
 In the connection list, add a toggle form inside each connection's `Item.Actions`, before the test-connection form. Give the form a unique id so the change handler can find it (mirrors the `updateLanguage` idiom already in this file):
@@ -812,6 +826,7 @@ git commit -m "feat: per-connection out-of-office toggle for team channels"
 ## Self-Review
 
 **Spec coverage:**
+
 - User in-app/email toggles for OOO + Calendar-shared → Tasks 1, 2, 4 (schema, resolver, UI).
 - Per-connection team webhook toggle → Tasks 1, 3, 5 (column, WHERE filter, UI).
 - Team invitations always-on/transactional → honored by omission: no task touches the invitation email path; `team_invite` has no preference column.

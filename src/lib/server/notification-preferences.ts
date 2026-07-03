@@ -22,7 +22,9 @@ export function recipientsForChannel<T extends { id: string }>(
 	prefs: Map<string, ChannelPrefs>,
 	channel: keyof ChannelPrefs
 ): T[] {
-	return recipients.filter((recipient) => (prefs.get(recipient.id) ?? DEFAULT_CHANNEL_PREFS)[channel]);
+	return recipients.filter(
+		(recipient) => (prefs.get(recipient.id) ?? DEFAULT_CHANNEL_PREFS)[channel]
+	);
 }
 
 /** id → prefs for the given users. Users with no stored row are simply absent from the map. */

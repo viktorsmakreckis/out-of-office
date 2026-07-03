@@ -22,9 +22,9 @@ The three delivery channels already have a natural ownership split:
 
 This design adds a preference layer that respects that split:
 
-- **User settings** control which categories reach *your* personal channels (in-app,
+- **User settings** control which categories reach _your_ personal channels (in-app,
   email).
-- **Team settings** control which categories post to *that team's* shared webhook
+- **Team settings** control which categories post to _that team's_ shared webhook
   channels, per connection.
 
 There is no inheritance between the two — they are independent concerns.
@@ -52,7 +52,7 @@ connection subscribed.
   be invited without ever finding out. `calendar_shared` and `team_invite` are never
   posted to team webhook channels — unchanged from today.
 - **Defaults preserve current behavior:** an absent preference row or default column
-  means *everything on*. No backfill; existing users and connections are unaffected
+  means _everything on_. No backfill; existing users and connections are unaffected
   until they change something.
 - Preference reads must not meaningfully slow event creation. Per-channel filtering
   happens at the existing fan-out points.
@@ -106,6 +106,7 @@ Wiring at each fan-out point:
 
   The two lists are computed separately, so a user can receive the in-app row but not
   the email (or vice versa).
+
 - **`postEventToTeamChannels`** (worker side) — add `notify_ooo = true` to the
   connections `WHERE` clause so muted connections are simply not selected.
 - **`notifyShareCreated`** — split the resolved target recipients by `sharedInApp` /
