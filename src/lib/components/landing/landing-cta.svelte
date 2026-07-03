@@ -7,7 +7,7 @@
 
 <section class="px-4 py-20 sm:px-6">
 	<div
-		class="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-linear-to-br from-sunset-400 via-sunset-500 to-sunset-700 px-6 py-16 text-center sm:py-24"
+		class="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-linear-to-br from-sunset-400 via-sunset-600 to-sunset-700 px-6 py-16 text-center sm:py-24"
 	>
 		<div
 			aria-hidden="true"
@@ -18,7 +18,7 @@
 		>
 			{m.landing_cta_title()}
 		</h2>
-		<p class="relative mt-4 text-lg text-white/80">{m.landing_cta_subtitle()}</p>
+		<p class="relative mt-4 text-lg text-white">{m.landing_cta_subtitle()}</p>
 		<Button
 			size="lg"
 			href={resolve('/signup' as Pathname)}
