@@ -123,7 +123,8 @@ export const notificationTypeEnum = pgEnum('notification_type', [
 	'team_invite',
 	'calendar_shared',
 	'event_created',
-	'event_updated'
+	'event_updated',
+	'event_deleted'
 ]);
 
 /**

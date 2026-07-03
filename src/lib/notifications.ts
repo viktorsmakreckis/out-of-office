@@ -12,7 +12,7 @@ export type AppNotification = {
 	| { type: 'team_invite'; data: { invitationId: string; teamName: string } }
 	| { type: 'calendar_shared'; data: { shareId: string } }
 	| {
-			type: 'event_created' | 'event_updated';
+			type: 'event_created' | 'event_updated' | 'event_deleted';
 			data: { eventTitle: string | null; eventType: string };
 	  }
 );
@@ -53,6 +53,7 @@ export function toAppNotification(row: NotificationRow): AppNotification {
 			};
 		case 'event_created':
 		case 'event_updated':
+		case 'event_deleted':
 			return {
 				...base,
 				type: row.type,

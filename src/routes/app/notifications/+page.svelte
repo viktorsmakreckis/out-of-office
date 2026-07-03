@@ -24,6 +24,8 @@
 				return m.notification_event_created({ name: entry.actorName });
 			case 'event_updated':
 				return m.notification_event_updated({ name: entry.actorName });
+			case 'event_deleted':
+				return m.notification_event_deleted({ name: entry.actorName });
 		}
 	}
 
@@ -57,7 +59,7 @@
 						<Item.Title>{text(entry)}</Item.Title>
 						<Item.Description>
 							{dateFormat.format(entry.createdAt)}
-							{#if (entry.type === 'event_created' || entry.type === 'event_updated') && entry.data.eventTitle}
+							{#if (entry.type === 'event_created' || entry.type === 'event_updated' || entry.type === 'event_deleted') && entry.data.eventTitle}
 								· {entry.data.eventTitle}
 							{/if}
 						</Item.Description>

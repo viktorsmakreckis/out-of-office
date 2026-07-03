@@ -98,7 +98,7 @@ export function calendarSharedEmail(sharerName: string, url: string, locale: Loc
 export function eventChangeEmail(
 	actorName: string,
 	eventLabel: string,
-	kind: 'created' | 'updated',
+	kind: 'created' | 'updated' | 'deleted',
 	url: string,
 	locale: Locale
 ): EmailContent {
@@ -106,7 +106,9 @@ export function eventChangeEmail(
 	const subject =
 		kind === 'created'
 			? m.email_event_created_subject({ name: actorName }, o)
-			: m.email_event_updated_subject({ name: actorName }, o);
+			: kind === 'updated'
+				? m.email_event_updated_subject({ name: actorName }, o)
+				: m.email_event_deleted_subject({ name: actorName }, o);
 	return actionEmail(
 		subject,
 		m.email_event_change_body({ name: actorName, title: eventLabel }, o),

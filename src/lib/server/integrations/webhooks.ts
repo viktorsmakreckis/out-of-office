@@ -13,7 +13,7 @@ import { buildEventMessage, type OooMessage } from './message';
 /** A calendar-event change ready to render per team, in that team's locale. */
 export type ChannelEvent = {
 	actorName: string;
-	kind: 'created' | 'updated';
+	kind: 'created' | 'updated' | 'deleted';
 	title: string | null;
 	type: string;
 	range: { allDay: boolean; start: Date; end: Date };

@@ -85,4 +85,11 @@ describe('composeLine', () => {
 		expect(composeLine(testMessage('en-GB'), (s) => `*${s}*`)).toContain('Test message');
 		expect(composeLine(testMessage('pl'), (s) => `*${s}*`)).toContain('Wiadomość testowa');
 	});
+
+	it('renders the deleted template', () => {
+		const message = buildEventMessage('Alice', 'deleted', null, 'vacation', range, 'en-GB');
+		const line = composeLine(message, (s) => `*${s}*`);
+		expect(line).toContain('*Alice*');
+		expect(line).toContain('cancelled');
+	});
 });

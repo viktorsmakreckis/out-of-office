@@ -12,7 +12,7 @@ export type OooMessage = {
 	eventLabel: string;
 	emoji: string;
 	dateRange: string;
-	kind: 'created' | 'updated' | 'test';
+	kind: 'created' | 'updated' | 'deleted' | 'test';
 	locale: Locale;
 };
 
@@ -67,7 +67,7 @@ export function formatDateRange(start: Date, end: Date, allDay: boolean, locale:
 
 export function buildEventMessage(
 	actorName: string,
-	kind: 'created' | 'updated',
+	kind: 'created' | 'updated' | 'deleted',
 	title: string | null,
 	type: string,
 	range: { allDay: boolean; start: Date; end: Date },
@@ -97,7 +97,7 @@ export function composeLine(message: OooMessage, bold: (s: string) => string): s
 		range: message.dateRange,
 		label: message.eventLabel
 	};
-	return message.kind === 'created'
-		? m.channel_message_created(params, { locale })
-		: m.channel_message_updated(params, { locale });
+	if (message.kind === 'created') return m.channel_message_created(params, { locale });
+	if (message.kind === 'updated') return m.channel_message_updated(params, { locale });
+	return m.channel_message_deleted(params, { locale });
 }
