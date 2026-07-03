@@ -24,4 +24,18 @@ export function startNotificationWorker(): void {
 	);
 	worker.on('failed', (job, err) => console.error('[queue] job failed:', job?.id, err));
 	worker.on('error', (err) => console.error('[queue] worker error:', err));
+
+	// Drain the in-flight job before exit so a deploy doesn't kill it mid-delivery
+	// (a killed job is retried on the next boot, re-sending already-delivered messages).
+	// Additive process.once listeners that coexist with adapter-node's own signal handling;
+	// we never call process.exit ourselves — the current job just keeps the loop alive until close().
+	const shutdown = async () => {
+		try {
+			await worker.close();
+		} catch (err) {
+			console.error('[queue] worker shutdown error:', err);
+		}
+	};
+	process.once('SIGTERM', shutdown);
+	process.once('SIGINT', shutdown);
 }
