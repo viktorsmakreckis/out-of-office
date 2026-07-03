@@ -37,15 +37,15 @@ board, teams and sharing, notifications — and funnels visitors to sign-up.
 
 One file per section under `src/lib/components/landing/`:
 
-| Component | Content |
-| --- | --- |
-| `landing-nav.svelte` | Wordmark, anchor links (Features, How it works, FAQ), Log in (ghost Button), Get started (primary Button). Sticky. |
-| `landing-hero.svelte` | Oversized headline with warm accent word, subcopy, two CTAs (Sign up free → `/signup`, See how it works → `#how-it-works`), hero screenshot of the calendar month view in a browser-style frame with a warm gradient glow behind it. |
-| `landing-features.svelte` | Bento-style grid of the four real features: shared calendar with drag & drop, fortnight availability board, teams & calendar sharing, in-app + email notifications. Two large cells carry real screenshots (availability board; sharing/teams), two smaller cells use Lucide icon + copy. |
-| `landing-how-it-works.svelte` | Three numbered steps: create your calendar → add your time off → share it with your team. |
-| `landing-faq.svelte` | Accordion (existing `ui/accordion`): is it free, how sharing works, supported languages, whether teammates can edit my calendar. |
-| `landing-cta.svelte` | Full-width warm gradient panel, big headline, sign-up Button. |
-| `landing-footer.svelte` | Wordmark, section links, log in / sign up links, copyright. |
+| Component                     | Content                                                                                                                                                                                                                                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `landing-nav.svelte`          | Wordmark, anchor links (Features, How it works, FAQ), Log in (ghost Button), Get started (primary Button). Sticky.                                                                                                                                                                        |
+| `landing-hero.svelte`         | Oversized headline with warm accent word, subcopy, two CTAs (Sign up free → `/signup`, See how it works → `#how-it-works`), hero screenshot of the calendar month view in a browser-style frame with a warm gradient glow behind it.                                                      |
+| `landing-features.svelte`     | Bento-style grid of the four real features: shared calendar with drag & drop, fortnight availability board, teams & calendar sharing, in-app + email notifications. Two large cells carry real screenshots (availability board; sharing/teams), two smaller cells use Lucide icon + copy. |
+| `landing-how-it-works.svelte` | Three numbered steps: create your calendar → add your time off → share it with your team.                                                                                                                                                                                                 |
+| `landing-faq.svelte`          | Accordion (existing `ui/accordion`): is it free, how sharing works, supported languages, whether teammates can edit my calendar.                                                                                                                                                          |
+| `landing-cta.svelte`          | Full-width warm gradient panel, big headline, sign-up Button.                                                                                                                                                                                                                             |
+| `landing-footer.svelte`       | Wordmark, section links, log in / sign up links, copyright.                                                                                                                                                                                                                               |
 
 Existing shadcn-svelte components (`button`, `accordion`, `badge`, etc.) are used wherever
 they fit; no new ui primitives.

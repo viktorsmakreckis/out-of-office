@@ -214,10 +214,7 @@ export const calendarFeedToken = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(table) => [
-		check(
-			'calendar_feed_token_owner_xor',
-			sql`num_nonnulls(${table.userId}, ${table.orgId}) = 1`
-		),
+		check('calendar_feed_token_owner_xor', sql`num_nonnulls(${table.userId}, ${table.orgId}) = 1`),
 		unique('calendar_feed_token_owner_unique').on(table.userId, table.orgId).nullsNotDistinct()
 	]
 );

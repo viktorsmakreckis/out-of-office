@@ -28,10 +28,12 @@
 ### Task 1: Database schema + migration
 
 **Files:**
+
 - Modify: `src/lib/server/db/schema.ts` (append after the `notification` table)
 - Create: `drizzle/0007_integrations.sql` (generated)
 
 **Interfaces:**
+
 - Produces: exported Drizzle tables `integrationConnection`, `calendarFeedToken`; enums `integrationProviderEnum` (`'slack' | 'discord' | 'msteams'`), `integrationKindEnum` (`'webhook'`); exported type `IntegrationProvider`. Column names used later: `integrationConnection.{id, orgId, userId, provider, kind, webhookUrl, label, createdById, consecutiveFailures, lastFailureAt, createdAt}`, `calendarFeedToken.{token, userId, orgId, createdAt}`.
 
 - [ ] **Step 1: Add the tables to the schema**
@@ -95,10 +97,7 @@ export const calendarFeedToken = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(table) => [
-		check(
-			'calendar_feed_token_owner_xor',
-			sql`num_nonnulls(${table.userId}, ${table.orgId}) = 1`
-		),
+		check('calendar_feed_token_owner_xor', sql`num_nonnulls(${table.userId}, ${table.orgId}) = 1`),
 		unique('calendar_feed_token_owner_unique').on(table.userId, table.orgId).nullsNotDistinct()
 	]
 );
@@ -131,6 +130,7 @@ git commit -m "feat(db): add integration_connection and calendar_feed_token tabl
 ### Task 2: Shared event-type labels + neutral channel message
 
 **Files:**
+
 - Create: `src/lib/events/labels.ts`
 - Create: `src/lib/server/integrations/message.ts`
 - Test: `src/lib/server/integrations/message.spec.ts`
@@ -138,6 +138,7 @@ git commit -m "feat(db): add integration_connection and calendar_feed_token tabl
 - Modify: `messages/en.json`, `messages/fr.json`, `messages/pl.json`
 
 **Interfaces:**
+
 - Produces:
   - `eventTypeLabelFor(type: string, locale: Locale): string` in `$lib/events/labels`
   - In `$lib/server/integrations/message`:
@@ -392,10 +393,12 @@ git commit -m "feat(integrations): neutral channel message with shared event-typ
 ### Task 3: Provider payload formatters
 
 **Files:**
+
 - Create: `src/lib/server/integrations/formatters.ts`
 - Test: `src/lib/server/integrations/formatters.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `OooMessage`, `composeLine` from `./message`; `IntegrationProvider` from `$lib/server/db/schema`.
 - Produces: `payloadFor(provider: IntegrationProvider, message: OooMessage): unknown` (plus exported `slackPayload`, `discordPayload`, `msteamsPayload` with the same `(message: OooMessage) => unknown` shape).
 
@@ -481,9 +484,7 @@ export function msteamsPayload(message: OooMessage): unknown {
 					$schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
 					type: 'AdaptiveCard',
 					version: '1.4',
-					body: [
-						{ type: 'TextBlock', text: composeLine(message, (s) => `**${s}**`), wrap: true }
-					]
+					body: [{ type: 'TextBlock', text: composeLine(message, (s) => `**${s}**`), wrap: true }]
 				}
 			}
 		]
@@ -518,10 +519,12 @@ git commit -m "feat(integrations): slack/discord/teams webhook payload formatter
 ### Task 4: Webhook URL validation + delivery
 
 **Files:**
+
 - Create: `src/lib/server/integrations/webhooks.ts`
 - Test: `src/lib/server/integrations/webhooks.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `payloadFor` from `./formatters`; `OooMessage` from `./message`; `db`, `integrationConnection`, `member` from `$lib/server/db` / schema.
 - Produces:
   - `isAllowedWebhookUrl(provider: IntegrationProvider, raw: string): boolean`
@@ -597,11 +600,7 @@ Expected: FAIL — cannot resolve `./webhooks`.
 ```ts
 import { eq, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import {
-	integrationConnection,
-	member,
-	type IntegrationProvider
-} from '$lib/server/db/schema';
+import { integrationConnection, member, type IntegrationProvider } from '$lib/server/db/schema';
 import { payloadFor } from './formatters';
 import type { OooMessage } from './message';
 
@@ -609,8 +608,7 @@ import type { OooMessage } from './message';
 const allowedHost: Record<IntegrationProvider, (host: string) => boolean> = {
 	slack: (host) => host === 'hooks.slack.com',
 	discord: (host) => host === 'discord.com' || host === 'discordapp.com',
-	msteams: (host) =>
-		host.endsWith('.logic.azure.com') || host.endsWith('.api.powerplatform.com')
+	msteams: (host) => host.endsWith('.logic.azure.com') || host.endsWith('.api.powerplatform.com')
 };
 
 export function isAllowedWebhookUrl(provider: IntegrationProvider, raw: string): boolean {
@@ -665,10 +663,7 @@ export async function deliverToConnection(
 }
 
 /** Best-effort post to every webhook connection of every team the actor is in. */
-export async function postEventToTeamChannels(
-	actorId: string,
-	message: OooMessage
-): Promise<void> {
+export async function postEventToTeamChannels(actorId: string, message: OooMessage): Promise<void> {
 	const memberships = await db
 		.select({ organizationId: member.organizationId })
 		.from(member)
@@ -710,10 +705,12 @@ git commit -m "feat(integrations): webhook validation and best-effort channel de
 ### Task 5: Wire channel posts into event notifications
 
 **Files:**
+
 - Modify: `src/lib/server/notifications.ts` (`notifyEventChange` gains a `range` parameter)
 - Modify: `src/routes/app/calendar/+page.server.ts` (both call sites)
 
 **Interfaces:**
+
 - Consumes: `buildEventMessage` from `$lib/server/integrations/message`, `postEventToTeamChannels` from `$lib/server/integrations/webhooks`.
 - Produces: new signature `notifyEventChange(actor: { id: string; name: string }, kind: 'created' | 'updated', eventTitle: string | null, eventType: string, range: { allDay: boolean; start: Date; end: Date }): Promise<void>`.
 
@@ -794,10 +791,12 @@ git commit -m "feat(integrations): post event changes to connected team channels
 ### Task 6: iCal feed generator
 
 **Files:**
+
 - Create: `src/lib/server/integrations/ical.ts`
 - Test: `src/lib/server/integrations/ical.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `eventTypeLabelFor` from `$lib/events/labels`.
 - Produces:
   - `type FeedEvent = { id: string; userName: string; type: string; title: string | null; allDay: boolean; start: Date; end: Date; updatedAt: Date }`
@@ -990,10 +989,12 @@ git commit -m "feat(integrations): iCal feed generator"
 ### Task 7: Feed tokens + public feed endpoint
 
 **Files:**
+
 - Create: `src/lib/server/integrations/feed-tokens.ts`
 - Create: `src/routes/feeds/[token].ics/+server.ts`
 
 **Interfaces:**
+
 - Consumes: `buildIcalFeed`, `FeedEvent` from `./ical`; `calendarFeedToken`, `calendarEvent`, `member`, `organization`, `user` tables.
 - Produces (in `$lib/server/integrations/feed-tokens`):
   - `type FeedOwner = { type: 'user' | 'org'; id: string }`
@@ -1144,11 +1145,13 @@ git commit -m "feat(integrations): calendar feed tokens and public .ics endpoint
 ### Task 8: Integration form schemas + UI message keys
 
 **Files:**
+
 - Create: `src/lib/schemas/integration.ts`
 - Test: `src/lib/schemas/integration.spec.ts`
 - Modify: `messages/en.json`, `messages/fr.json`, `messages/pl.json`
 
 **Interfaces:**
+
 - Produces (in `$lib/schemas/integration`):
   - `integrationProviders = ['slack', 'discord', 'msteams'] as const`
   - `addConnectionSchema` — `{ provider: 'slack' | 'discord' | 'msteams'; webhookUrl: string; label: string }` (label defaults to `''`)
@@ -1327,9 +1330,11 @@ git commit -m "feat(integrations): connection form schema and UI copy"
 ### Task 9: Team page server — connections load + actions
 
 **Files:**
+
 - Modify: `src/routes/app/teams/[id]/+page.server.ts`
 
 **Interfaces:**
+
 - Consumes: `addConnectionSchema`, `connectionIdSchema` from `$lib/schemas/integration`; `isAllowedWebhookUrl`, `deliverToConnection` from `$lib/server/integrations/webhooks`; `testMessage` from `$lib/server/integrations/message`; `getOrCreateFeedToken`, `regenerateFeedToken`, `feedUrl` from `$lib/server/integrations/feed-tokens`; `integrationConnection` table.
 - Produces: `load` returns an extra `integrations` field — `null` for non-managers, else `{ connections: { id: string; provider: 'slack' | 'discord' | 'msteams'; label: string | null; consecutiveFailures: number; lastFailureAt: Date | null }[]; feedUrl: string; connectionForm: SuperValidated<...> }`. Actions: `addConnection`, `removeConnection`, `testConnection`, `regenerateFeed`.
 
@@ -1340,7 +1345,11 @@ Add imports to `src/routes/app/teams/[id]/+page.server.ts`:
 ```ts
 import { addConnectionSchema, connectionIdSchema } from '$lib/schemas/integration';
 import { integrationConnection } from '$lib/server/db/schema';
-import { feedUrl, getOrCreateFeedToken, regenerateFeedToken } from '$lib/server/integrations/feed-tokens';
+import {
+	feedUrl,
+	getOrCreateFeedToken,
+	regenerateFeedToken
+} from '$lib/server/integrations/feed-tokens';
 import { testMessage } from '$lib/server/integrations/message';
 import { deliverToConnection, isAllowedWebhookUrl } from '$lib/server/integrations/webhooks';
 ```
@@ -1480,11 +1489,13 @@ git commit -m "feat(integrations): team connection and feed actions"
 ### Task 10: Integrations UI — feed field + integrations card + team page wiring
 
 **Files:**
+
 - Create: `src/lib/components/integrations/feed-url-field.svelte`
 - Create: `src/lib/components/integrations/integrations-card.svelte`
 - Modify: `src/routes/app/teams/[id]/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: the `integrations` load data from Task 9; shadcn-svelte `Card`, `Item`, `Field`, `Input`, `Select`, `Button`, `Badge`, `Spinner`; `svelte-sonner` `toast`.
 - Produces:
   - `feed-url-field.svelte` props: `{ url: string; description: string }` — readonly input + copy button + regenerate submit (posts to `?/regenerateFeed`). Reused by Task 11.
@@ -1697,10 +1708,12 @@ git commit -m "feat(integrations): team page integrations card"
 ### Task 11: Personal settings — feed URL section
 
 **Files:**
+
 - Modify: `src/routes/app/settings/+page.server.ts`
 - Modify: `src/routes/app/settings/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `getOrCreateFeedToken`, `regenerateFeedToken`, `feedUrl` from `$lib/server/integrations/feed-tokens`; `feed-url-field.svelte` from Task 10.
 - Produces: `load` returns an extra `feedUrl: string`; new action `regenerateFeed`.
 
@@ -1719,7 +1732,7 @@ import {
 In `load`, add to the returned object:
 
 ```ts
-feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'user', id: user.id }))
+feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'user', id: user.id }));
 ```
 
 (the `user` here is the one from `await parent()` — it has an `id` field.)
@@ -1732,7 +1745,7 @@ regenerateFeed: async (event) => {
 	if (!user) throw kitRedirect(303, '/login');
 	await regenerateFeedToken({ type: 'user', id: user.id });
 	redirect(303, '/app/settings', { type: 'success', message: m.feed_regenerated() }, event);
-}
+};
 ```
 
 - [ ] **Step 2: Render the feed card in settings**

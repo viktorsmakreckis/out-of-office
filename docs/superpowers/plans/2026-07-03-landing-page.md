@@ -35,11 +35,13 @@
 ### Task 1: Root route — conditional redirect + page shell
 
 **Files:**
+
 - Modify: `src/routes/+page.server.ts`
 - Create: `src/routes/page.server.spec.ts` (cannot start with `+` — SvelteKit reserves that prefix)
 - Create: `src/routes/+page.svelte` (temporary shell, filled in by Tasks 4–8)
 
 **Interfaces:**
+
 - Produces: `GET /` renders `+page.svelte` for anonymous visitors; redirects (303) to `/app` when `locals.user` is set. Tasks 4–8 replace/extend `+page.svelte`.
 
 - [ ] **Step 1: Create the feature branch**
@@ -140,10 +142,12 @@ git commit -m "feat: serve landing shell at / for anonymous visitors"
 ### Task 2: Foundation — sunset color tokens + all landing copy (en/pl/fr)
 
 **Files:**
+
 - Modify: `src/routes/layout.css` (append a `@theme` block)
 - Modify: `messages/en.json`, `messages/pl.json`, `messages/fr.json`
 
 **Interfaces:**
+
 - Produces: Tailwind utilities `bg-sunset-{50..700}`, `text-sunset-*`, `border-sunset-*`, and CSS vars `--color-sunset-*`; paraglide functions `m.landing_*()` used by Tasks 4–8.
 
 - [ ] **Step 1: Add the sunset scale to `src/routes/layout.css`**
@@ -347,11 +351,13 @@ git commit -m "feat: sunset accent tokens and landing page copy (en/pl/fr)"
 Produces the six images every later visual task depends on. Run this before Tasks 5–6.
 
 **Files:**
+
 - Create: `src/lib/assets/landing/calendar-light.png` (2048×1280), `calendar-dark.png` (2048×1280)
 - Create: `src/lib/assets/landing/board-light.png` (2368×1536), `board-dark.png`, `sharing-light.png`, `sharing-dark.png` (all 2368×1536)
 - Scratch (not committed): `$SHOTS` — throughout this task, `SHOTS=/private/tmp/claude-501/-Users-viktorsm-WebstormProjects-personal-out-of-office/e8a5a3dc-a195-4a31-9b7a-215753e12153/scratchpad/shots`
 
 **Interfaces:**
+
 - Produces: the six PNGs at exactly the dimensions above (Tasks 5–6 hardcode them in `width`/`height` attributes).
 
 - [ ] **Step 1: Ensure Postgres and the dev server are up**
@@ -483,11 +489,13 @@ git commit -m "feat: landing page product screenshots (light/dark)"
 ### Task 4: Nav + footer, wired into the page
 
 **Files:**
+
 - Create: `src/lib/components/landing/landing-nav.svelte`
 - Create: `src/lib/components/landing/landing-footer.svelte`
 - Modify: `src/routes/+page.svelte` (replace the Task 1 shell)
 
 **Interfaces:**
+
 - Consumes: `m.landing_nav_*`, `m.landing_meta_*`, `m.landing_footer_*` (Task 2); `sunset-*` utilities (Task 2).
 - Produces: `+page.svelte` with an empty `<main class="flex-1">` that Tasks 5–8 fill; section anchor ids `#features`, `#how-it-works`, `#faq` are linked from nav and footer and must match later tasks.
 
@@ -511,7 +519,9 @@ git commit -m "feat: landing page product screenshots (light/dark)"
 			{m.app_name()}
 		</a>
 		<div class="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-			<a href="#features" class="transition-colors hover:text-foreground">{m.landing_nav_features()}</a>
+			<a href="#features" class="transition-colors hover:text-foreground"
+				>{m.landing_nav_features()}</a
+			>
 			<a href="#how-it-works" class="transition-colors hover:text-foreground">
 				{m.landing_nav_how_it_works()}
 			</a>
@@ -552,7 +562,9 @@ git commit -m "feat: landing page product screenshots (light/dark)"
 			<p class="mt-2 text-sm text-muted-foreground">{m.landing_footer_tagline()}</p>
 		</div>
 		<nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-			<a href="#features" class="transition-colors hover:text-foreground">{m.landing_nav_features()}</a>
+			<a href="#features" class="transition-colors hover:text-foreground"
+				>{m.landing_nav_features()}</a
+			>
 			<a href="#how-it-works" class="transition-colors hover:text-foreground">
 				{m.landing_nav_how_it_works()}
 			</a>
@@ -609,10 +621,12 @@ git commit -m "feat: landing nav and footer"
 ### Task 5: Hero — auto-reply chip, display headline, sun-glow screenshot
 
 **Files:**
+
 - Create: `src/lib/components/landing/landing-hero.svelte`
 - Modify: `src/routes/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `m.landing_hero_*` (Task 2), `src/lib/assets/landing/calendar-{light,dark}.png` at 2048×1280 (Task 3).
 
 - [ ] **Step 1: Create `src/lib/components/landing/landing-hero.svelte`**
@@ -630,7 +644,7 @@ git commit -m "feat: landing nav and footer"
 
 <section class="overflow-hidden px-4 pt-16 pb-10 sm:px-6 sm:pt-24">
 	<div
-		class="animate-in fade-in slide-in-from-bottom-4 mx-auto flex max-w-6xl flex-col items-center text-center duration-700 motion-reduce:animate-none"
+		class="mx-auto flex max-w-6xl animate-in flex-col items-center text-center duration-700 fade-in slide-in-from-bottom-4 motion-reduce:animate-none"
 	>
 		<p
 			class="flex items-center gap-2 rounded-full border border-sunset-200 bg-sunset-50 px-4 py-1.5 text-sm font-medium text-sunset-700 dark:border-sunset-500/30 dark:bg-sunset-500/10 dark:text-sunset-300"
@@ -658,7 +672,7 @@ git commit -m "feat: landing nav and footer"
 	</div>
 
 	<div
-		class="animate-in fade-in slide-in-from-bottom-8 fill-mode-backwards relative mx-auto mt-16 max-w-5xl duration-700 [animation-delay:150ms] motion-reduce:animate-none sm:mt-20"
+		class="relative mx-auto mt-16 max-w-5xl animate-in duration-700 fill-mode-backwards [animation-delay:150ms] fade-in slide-in-from-bottom-8 motion-reduce:animate-none sm:mt-20"
 	>
 		<div
 			aria-hidden="true"
@@ -720,10 +734,12 @@ git commit -m "feat: landing hero with auto-reply chip and sunrise screenshot"
 ### Task 6: Features bento grid
 
 **Files:**
+
 - Create: `src/lib/components/landing/landing-features.svelte`
 - Modify: `src/routes/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `m.landing_features_*`/`m.landing_feature_*` (Task 2); `board-*.png` and `sharing-*.png` at 2368×1536 (Task 3).
 - Produces: section id `features` (nav/footer link target).
 
@@ -864,11 +880,13 @@ git commit -m "feat: landing features bento grid"
 ### Task 7: How-it-works + FAQ
 
 **Files:**
+
 - Create: `src/lib/components/landing/landing-how-it-works.svelte`
 - Create: `src/lib/components/landing/landing-faq.svelte`
 - Modify: `src/routes/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `m.landing_how_*`, `m.landing_faq_*` (Task 2); `ui/accordion`.
 - Produces: section ids `how-it-works` and `faq` (nav/footer link targets).
 
@@ -885,7 +903,10 @@ git commit -m "feat: landing features bento grid"
 	];
 </script>
 
-<section id="how-it-works" class="scroll-mt-20 bg-sunset-50 px-4 py-20 sm:px-6 dark:bg-sunset-500/5">
+<section
+	id="how-it-works"
+	class="scroll-mt-20 bg-sunset-50 px-4 py-20 sm:px-6 dark:bg-sunset-500/5"
+>
 	<div class="mx-auto max-w-6xl">
 		<h2 class="text-center text-3xl font-bold tracking-tight text-balance sm:text-4xl">
 			{m.landing_how_title()}
@@ -952,8 +973,8 @@ git commit -m "feat: landing features bento grid"
 Add to the script block (keep imports alphabetized):
 
 ```svelte
-import LandingFaq from '$lib/components/landing/landing-faq.svelte';
-import LandingHowItWorks from '$lib/components/landing/landing-how-it-works.svelte';
+import LandingFaq from '$lib/components/landing/landing-faq.svelte'; import LandingHowItWorks from
+'$lib/components/landing/landing-how-it-works.svelte';
 ```
 
 And in the markup:
@@ -982,10 +1003,12 @@ git commit -m "feat: landing how-it-works and FAQ sections"
 ### Task 8: Final CTA panel
 
 **Files:**
+
 - Create: `src/lib/components/landing/landing-cta.svelte`
 - Modify: `src/routes/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `m.landing_cta_*` (Task 2).
 
 - [ ] **Step 1: Create `src/lib/components/landing/landing-cta.svelte`**
@@ -1092,6 +1115,7 @@ pnpm lint        # prettier + eslint clean
 - [ ] **Step 3: Visual checks**
 
 Using the browser preview tools on `/` (logged out):
+
 1. Desktop 1280px light: full-page pass — hero glow sits behind the screenshot, bento aligned, FAQ opens.
 2. Dark mode: dark screenshots swap in (`dark:hidden` pairs), chip/gradients legible.
 3. Mobile 375px: no horizontal scroll, nav collapses to logo + buttons, bento stacks.
