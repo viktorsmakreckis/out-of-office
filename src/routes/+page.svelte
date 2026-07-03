@@ -1,4 +1,5 @@
 <script lang="ts">
+	import LandingCta from '$lib/components/landing/landing-cta.svelte';
 	import LandingFaq from '$lib/components/landing/landing-faq.svelte';
 	import LandingFeatures from '$lib/components/landing/landing-features.svelte';
 	import LandingFooter from '$lib/components/landing/landing-footer.svelte';
@@ -20,6 +21,7 @@
 		<LandingFeatures />
 		<LandingHowItWorks />
 		<LandingFaq />
+		<LandingCta />
 	</main>
 	<LandingFooter />
 </div>
