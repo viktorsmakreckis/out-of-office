@@ -20,7 +20,12 @@
 	const sidebar = useSidebar();
 
 	// Endonyms are intentionally not translated.
-	const localeLabels: Record<Locale, string> = { en: 'English', pl: 'Polski', fr: 'Français' };
+	const localeLabels: Record<Locale, string> = {
+		'en-GB': 'English (UK)',
+		'en-US': 'English (US)',
+		pl: 'Polski',
+		fr: 'Français'
+	};
 	// setLocale() reloads the page, so the current locale is stable per render.
 	const currentLocale = getLocale();
 

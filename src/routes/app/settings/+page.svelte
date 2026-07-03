@@ -22,7 +22,12 @@
 	let { data } = $props();
 
 	// Endonyms are intentionally not translated.
-	const localeLabels: Record<Locale, string> = { en: 'English', pl: 'Polski', fr: 'Français' };
+	const localeLabels: Record<Locale, string> = {
+		'en-GB': 'English (UK)',
+		'en-US': 'English (US)',
+		pl: 'Polski',
+		fr: 'Français'
+	};
 	const timezones = Intl.supportedValuesOf('timeZone');
 
 	// svelte-ignore state_referenced_locally

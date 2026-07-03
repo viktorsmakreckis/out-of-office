@@ -7,6 +7,6 @@
 	"plugin.inlang.messageFormat": {
 		"pathPattern": "./messages/{locale}.json"
 	},
-	"baseLocale": "en",
-	"locales": ["en", "pl", "fr"]
+	"baseLocale": "en-GB",
+	"locales": ["en-GB", "en-US", "pl", "fr"]
 }
