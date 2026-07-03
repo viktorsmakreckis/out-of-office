@@ -1,6 +1,5 @@
 <script lang="ts" generics="T">
 	import type { Snippet } from 'svelte';
-	import type { HTMLButtonAttributes } from 'svelte/elements';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { m } from '$lib/paraglide/messages.js';
 	import { formatDateRange, formatDateTimeRange } from './core/format.js';
@@ -15,7 +14,7 @@
 		event: CalendarEvent<T>;
 		locale: string;
 		disabled?: boolean;
-		trigger: Snippet<[HTMLButtonAttributes]>;
+		trigger: Snippet<[Record<string, unknown>]>;
 	} = $props();
 
 	const whenLabel = $derived.by(() => {
@@ -29,7 +28,7 @@
 	<Tooltip.Root {disabled}>
 		<Tooltip.Trigger>
 			{#snippet child({ props })}
-				{@render trigger(props as HTMLButtonAttributes)}
+				{@render trigger(props)}
 			{/snippet}
 		</Tooltip.Trigger>
 		<Tooltip.Content class="flex-col items-start gap-0.5">

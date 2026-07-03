@@ -257,7 +257,7 @@
 													<EventTooltip {event} {locale}>
 														{#snippet trigger(tooltipProps)}
 															<EventChip
-																{...mergeProps(tooltipProps as Record<string, unknown>, {
+																{...mergeProps(tooltipProps, {
 																	onclick: () => onEventClick?.(event)
 																})}
 																{event}
@@ -292,7 +292,7 @@
 								<EventTooltip event={segment.event} {locale} disabled={drag !== null}>
 									{#snippet trigger(tooltipProps)}
 										<EventChip
-											{...mergeProps(tooltipProps as Record<string, unknown>, {
+											{...mergeProps(tooltipProps, {
 												onpointerdown: (e: PointerEvent) => startMove(e, segment.event),
 												onclick: () => chipClick(segment.event)
 											})}
