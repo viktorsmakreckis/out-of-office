@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { superForm, type Infer, type SuperValidated } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import { Badge } from '$lib/components/ui/badge';
@@ -43,12 +44,7 @@
 	// svelte-ignore state_referenced_locally
 	const connection = superForm(form, {
 		id: 'connection',
-		validators: zod4Client(addConnectionSchema),
-		// Actions redirect on success (flash-message pattern), and superForm only
-		// auto-resets on 'success' — so clear the inline form on redirect ourselves.
-		onResult({ result }) {
-			if (result.type === 'redirect') connection.reset();
-		}
+		validators: zod4Client(addConnectionSchema)
 	});
 	const {
 		form: connectionData,
@@ -83,13 +79,13 @@
 							</Item.Description>
 						</Item.Content>
 						<Item.Actions>
-							<form method="POST" action="?/testConnection">
+							<form method="POST" action="?/testConnection" use:enhance>
 								<input type="hidden" name="id" value={row.id} />
 								<Button type="submit" variant="outline" size="sm">
 									{m.integrations_test_cta()}
 								</Button>
 							</form>
-							<form method="POST" action="?/removeConnection">
+							<form method="POST" action="?/removeConnection" use:enhance>
 								<input type="hidden" name="id" value={row.id} />
 								<Button type="submit" variant="ghost" size="sm">
 									{m.integrations_remove_cta()}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 	import IntegrationsCard from '$lib/components/integrations/integrations-card.svelte';
@@ -22,6 +23,9 @@
 	const canManage = $derived(data.myRole === 'owner' || data.myRole === 'admin');
 	const isOwner = $derived(data.myRole === 'owner');
 
+	// Per-member transfer-ownership confirmation dialogs (closed on successful submit).
+	let transferOpen = $state<Record<string, boolean>>({});
+
 	const roleLabels: Record<string, string> = {
 		owner: m.team_role_owner(),
 		admin: m.team_role_admin(),
@@ -43,7 +47,10 @@
 	// svelte-ignore state_referenced_locally
 	const rename = superForm(data.renameForm, {
 		id: 'rename',
-		validators: zod4Client(renameTeamSchema)
+		validators: zod4Client(renameTeamSchema),
+		// The input shows the current team name (not a fill-and-clear field), so keep the
+		// submitted value after saving instead of resetting to the stale initial snapshot.
+		resetForm: false
 	});
 	const {
 		form: renameData,
@@ -90,6 +97,7 @@
 								method="POST"
 								action="?/updateRole"
 								class="contents"
+								use:enhance
 							>
 								<input type="hidden" name="memberId" value={teamMember.id} />
 								<input type="hidden" name="role" value={teamMember.role} />
@@ -116,7 +124,7 @@
 								</Select.Root>
 							</form>
 							{#if isOwner}
-								<AlertDialog.Root>
+								<AlertDialog.Root bind:open={transferOpen[teamMember.id]}>
 									<AlertDialog.Trigger>
 										{#snippet child({ props })}
 											<Button {...props} variant="outline" size="sm">{m.team_transfer_cta()}</Button
@@ -132,7 +140,15 @@
 										</AlertDialog.Header>
 										<AlertDialog.Footer>
 											<AlertDialog.Cancel>{m.cancel()}</AlertDialog.Cancel>
-											<form method="POST" action="?/transferOwnership">
+											<form
+												method="POST"
+												action="?/transferOwnership"
+												use:enhance={() =>
+													async ({ update }) => {
+														await update();
+														transferOpen[teamMember.id] = false;
+													}}
+											>
 												<input type="hidden" name="memberId" value={teamMember.id} />
 												<Button type="submit">{m.team_transfer_cta()}</Button>
 											</form>
@@ -140,7 +156,7 @@
 									</AlertDialog.Content>
 								</AlertDialog.Root>
 							{/if}
-							<form method="POST" action="?/removeMember">
+							<form method="POST" action="?/removeMember" use:enhance>
 								<input type="hidden" name="memberId" value={teamMember.id} />
 								<Button type="submit" variant="ghost" size="sm">{m.team_member_remove()}</Button>
 							</form>
@@ -288,7 +304,7 @@
 									{/if}
 								</Item.Content>
 								<Item.Actions>
-									<form method="POST" action="?/revokeShare">
+									<form method="POST" action="?/revokeShare" use:enhance>
 										<input type="hidden" name="id" value={teamShare.id} />
 										<Button type="submit" variant="ghost" size="sm">{m.share_revoke()}</Button>
 									</form>

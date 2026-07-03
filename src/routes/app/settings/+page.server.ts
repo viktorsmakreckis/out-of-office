@@ -1,5 +1,5 @@
 import { fail, redirect as kitRedirect } from '@sveltejs/kit';
-import { redirect } from 'sveltekit-flash-message/server';
+import { redirect, setFlash } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
@@ -159,6 +159,8 @@ export const actions: Actions = {
 		const user = event.locals.user;
 		if (!user) throw kitRedirect(303, '/login');
 		await regenerateFeedToken({ type: 'user', id: user.id });
-		redirect(303, '/app/settings', { type: 'success', message: m.feed_regenerated() }, event);
+		// Flash in place so the settings page keeps its scroll position.
+		setFlash({ type: 'success', message: m.feed_regenerated() }, event);
+		return {};
 	}
 };

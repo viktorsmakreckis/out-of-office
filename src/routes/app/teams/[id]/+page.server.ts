@@ -1,6 +1,6 @@
 import { error, fail, redirect as kitRedirect } from '@sveltejs/kit';
 import { and, desc, eq, gt } from 'drizzle-orm';
-import { redirect } from 'sveltekit-flash-message/server';
+import { redirect, setFlash } from 'sveltekit-flash-message/server';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { m } from '$lib/paraglide/messages.js';
@@ -32,7 +32,7 @@ import { testMessage } from '$lib/server/integrations/message';
 import { deliverToConnection, isAllowedWebhookUrl } from '$lib/server/integrations/webhooks';
 import { notifyShareCreated } from '$lib/server/notifications';
 import { createShare, shareNameMaps, type ShareEntity } from '$lib/server/sharing';
-import type { Actions, PageServerLoad } from './$types';
+import type { Actions, PageServerLoad, RequestEvent } from './$types';
 
 function requireUser(locals: App.Locals) {
 	if (!locals.user) throw kitRedirect(303, '/login');
@@ -156,6 +156,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 const teamPath = (id: string) => `/app/teams/${id}`;
 
+/**
+ * Flash a message in place instead of redirecting, so the page keeps its scroll
+ * position after a mutation. Enhanced forms apply the result without navigating.
+ */
+function flash(event: RequestEvent, message: App.PageData['flash']) {
+	setFlash(message, event);
+}
+
 export const actions: Actions = {
 	invite: async (event) => {
 		const form = await superValidate(event.request, zod4(inviteMemberSchema), { id: 'invite' });
@@ -175,12 +183,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_invite_sent() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_invite_sent() });
+		return { form };
 	},
 
 	// requireManager is the first layer; better-auth's removeMember/updateMemberRole are the
@@ -198,12 +202,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_member_removed() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_member_removed() });
+		return { form };
 	},
 
 	// See removeMember above: better-auth enforces owner-immutability and org-scoped memberIds.
@@ -224,12 +224,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_role_updated() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_role_updated() });
+		return { form };
 	},
 
 	transferOwnership: async (event) => {
@@ -253,12 +249,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.team_transferred() },
-			event
-		);
+		flash(event, { type: 'success', message: m.team_transferred() });
+		return { form };
 	},
 
 	rename: async (event) => {
@@ -275,7 +267,8 @@ export const actions: Actions = {
 		} catch (err) {
 			return setError(form, '', authErrorMessage(err));
 		}
-		redirect(303, teamPath(event.params.id), { type: 'success', message: m.team_renamed() }, event);
+		flash(event, { type: 'success', message: m.team_renamed() });
+		return { form };
 	},
 
 	deleteTeam: async (event) => {
@@ -348,20 +341,12 @@ export const actions: Actions = {
 			.where(eq(organization.id, event.params.id));
 		const created = await createShare({ type: 'org', id: event.params.id }, target, currentUser.id);
 		if (created === 'duplicate') {
-			redirect(
-				303,
-				teamPath(event.params.id),
-				{ type: 'error', message: m.share_duplicate() },
-				event
-			);
+			flash(event, { type: 'error', message: m.share_duplicate() });
+			return { form };
 		}
 		await notifyShareCreated(created.id, team?.name ?? '', target);
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.share_created() },
-			event
-		);
+		flash(event, { type: 'success', message: m.share_created() });
+		return { form };
 	},
 
 	revokeShare: async (event) => {
@@ -376,12 +361,8 @@ export const actions: Actions = {
 			)
 			.returning({ id: calendarShare.id });
 		if (deleted.length === 0) error(404);
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.share_revoked() },
-			event
-		);
+		flash(event, { type: 'success', message: m.share_revoked() });
+		return { form };
 	},
 
 	addConnection: async (event) => {
@@ -401,12 +382,8 @@ export const actions: Actions = {
 			label: form.data.label === '' ? null : form.data.label,
 			createdById: currentUser.id
 		});
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.integrations_added() },
-			event
-		);
+		flash(event, { type: 'success', message: m.integrations_added() });
+		return { form };
 	},
 
 	removeConnection: async (event) => {
@@ -426,12 +403,8 @@ export const actions: Actions = {
 			)
 			.returning({ id: integrationConnection.id });
 		if (deleted.length === 0) error(404);
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.integrations_removed() },
-			event
-		);
+		flash(event, { type: 'success', message: m.integrations_removed() });
+		return { form };
 	},
 
 	testConnection: async (event) => {
@@ -452,25 +425,20 @@ export const actions: Actions = {
 			);
 		if (!connection) error(404);
 		const ok = await deliverToConnection(connection, testMessage());
-		redirect(
-			303,
-			teamPath(event.params.id),
+		flash(
+			event,
 			ok
 				? { type: 'success', message: m.integrations_test_sent() }
-				: { type: 'error', message: m.integrations_test_failed() },
-			event
+				: { type: 'error', message: m.integrations_test_failed() }
 		);
+		return { form };
 	},
 
 	regenerateFeed: async (event) => {
 		const currentUser = requireUser(event.locals);
 		requireManager(await requireMembership(currentUser.id, event.params.id));
 		await regenerateFeedToken({ type: 'org', id: event.params.id });
-		redirect(
-			303,
-			teamPath(event.params.id),
-			{ type: 'success', message: m.feed_regenerated() },
-			event
-		);
+		flash(event, { type: 'success', message: m.feed_regenerated() });
+		return {};
 	}
 };
