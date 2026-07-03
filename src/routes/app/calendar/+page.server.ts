@@ -128,7 +128,8 @@ export const actions: Actions = {
 				{ id: user.id, name: user.name },
 				form.data.id === '' ? 'created' : 'updated',
 				values.title,
-				values.type
+				values.type,
+				{ allDay: values.allDay, start: range.start, end: range.end }
 			);
 		} catch (err) {
 			console.error('[calendar] notification fan-out failed:', err);
@@ -171,7 +172,8 @@ export const actions: Actions = {
 				{ id: user.id, name: user.name },
 				'updated',
 				updated[0].title,
-				updated[0].type
+				updated[0].type,
+				{ allDay: form.data.allDay, start: range.start, end: range.end }
 			);
 		} catch (err) {
 			console.error('[calendar] notification fan-out failed:', err);

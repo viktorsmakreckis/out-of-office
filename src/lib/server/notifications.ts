@@ -16,6 +16,8 @@ import {
 	sendEmail,
 	type EmailContent
 } from '$lib/server/email';
+import { buildEventMessage } from '$lib/server/integrations/message';
+import { postEventToTeamChannels } from '$lib/server/integrations/webhooks';
 import { getEventAudience, getUsersByIds, type Recipient, type ShareEntity } from './sharing';
 
 type NotificationType = 'team_invite' | 'calendar_shared' | 'event_created' | 'event_updated';
@@ -90,7 +92,8 @@ export async function notifyEventChange(
 	actor: { id: string; name: string },
 	kind: 'created' | 'updated',
 	eventTitle: string | null,
-	eventType: string
+	eventType: string,
+	range: { allDay: boolean; start: Date; end: Date }
 ): Promise<void> {
 	const recipients = await getEventAudience(actor.id);
 	const type = kind === 'created' ? 'event_created' : 'event_updated';
@@ -99,6 +102,10 @@ export async function notifyEventChange(
 		const label = eventTitle ?? eventTypeLabelFor(eventType, locale);
 		return eventChangeEmail(actor.name, label, kind, `${env.ORIGIN}/app/calendar`, locale);
 	});
+	await postEventToTeamChannels(
+		actor.id,
+		buildEventMessage(actor.name, kind, eventTitle, eventType, range)
+	);
 }
 
 /** Display name of a share's sharer entity ("Alice" or the team name). */
