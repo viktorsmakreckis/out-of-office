@@ -6,10 +6,12 @@
 		type CalendarDate
 	} from '@internationalized/date';
 	import type { Snippet } from 'svelte';
+	import { mergeProps } from 'bits-ui';
 	import * as Popover from '$lib/components/ui/popover';
 	import { m } from '$lib/paraglide/messages.js';
 	import { cn } from '$lib/utils.js';
 	import EventChip from './event-chip.svelte';
+	import EventTooltip from './event-tooltip.svelte';
 	import {
 		cellAtPoint,
 		dateRangeBetween,
@@ -252,12 +254,18 @@
 										<Popover.Content class="w-72 p-2">
 											<div class="flex flex-col gap-1">
 												{#each eventsOnDay(previewEvents, day) as event (event.id)}
-													<EventChip
-														{event}
-														{locale}
-														{eventContent}
-														onclick={() => onEventClick?.(event)}
-													/>
+													<EventTooltip {event} {locale}>
+														{#snippet trigger(tooltipProps)}
+															<EventChip
+																{...mergeProps(tooltipProps as Record<string, unknown>, {
+																	onclick: () => onEventClick?.(event)
+																})}
+																{event}
+																{locale}
+																{eventContent}
+															/>
+														{/snippet}
+													</EventTooltip>
 												{/each}
 											</div>
 										</Popover.Content>
@@ -281,16 +289,22 @@
 								style="left: {(segment.startCol / 7) * 100}%; width: {(segment.span / 7) *
 									100}%; top: {segment.lane * 24}px;"
 							>
-								<EventChip
-									event={segment.event}
-									{locale}
-									continuesLeft={segment.continuesLeft}
-									continuesRight={segment.continuesRight}
-									{eventContent}
-									class={cn(canEdit(segment.event) && 'cursor-grab')}
-									onpointerdown={(e: PointerEvent) => startMove(e, segment.event)}
-									onclick={() => chipClick(segment.event)}
-								/>
+								<EventTooltip event={segment.event} {locale} disabled={drag !== null}>
+									{#snippet trigger(tooltipProps)}
+										<EventChip
+											{...mergeProps(tooltipProps as Record<string, unknown>, {
+												onpointerdown: (e: PointerEvent) => startMove(e, segment.event),
+												onclick: () => chipClick(segment.event)
+											})}
+											event={segment.event}
+											{locale}
+											continuesLeft={segment.continuesLeft}
+											continuesRight={segment.continuesRight}
+											{eventContent}
+											class={cn(canEdit(segment.event) && 'cursor-grab')}
+										/>
+									{/snippet}
+								</EventTooltip>
 								{#if segment.event.allDay && canEdit(segment.event)}
 									{#if !segment.continuesLeft}
 										<div
