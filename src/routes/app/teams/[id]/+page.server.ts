@@ -77,7 +77,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		.from(organization)
 		.where(eq(organization.id, params.id));
 	if (!team) error(404);
-	const [members, pendingInvitations, teamShares, myTeams] = await Promise.all([
+	const [members, pendingInvitations, teamShares, allTeams] = await Promise.all([
 		db
 			.select({
 				id: member.id,
@@ -107,9 +107,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			.orderBy(desc(calendarShare.createdAt)),
 		db
 			.select({ id: organization.id, name: organization.name })
-			.from(member)
-			.innerJoin(organization, eq(member.organizationId, organization.id))
-			.where(eq(member.userId, currentUser.id))
+			.from(organization)
+			.orderBy(organization.name)
 	]);
 	const [inviteForm, renameForm, shareForm] = await Promise.all([
 		superValidate(zod4(inviteMemberSchema), { id: 'invite' }),
@@ -121,8 +120,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		members,
 		pendingInvitations,
 		shares: await describeShareTargets(teamShares),
-		// Teams the team calendar could be shared with (exclude this team itself).
-		shareableTeams: myTeams.filter((t) => t.id !== params.id),
+		// Teams the team calendar could be shared with (any team; exclude this team itself).
+		shareableTeams: allTeams.filter((t) => t.id !== params.id),
 		myRole: membership.role,
 		inviteForm,
 		renameForm,

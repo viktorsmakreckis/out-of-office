@@ -124,8 +124,9 @@ All under the authed `/app` layout. All forms: superforms + zod4, structured wit
   change role. Owner: transfer ownership, rename, delete team. Member: leave. Team sharing
   card (owner/admin): share the team calendar with a person or team, list active/pending
   shares, revoke.
-- **`/app/sharing`** — share your calendar with a person (email) or one of your teams;
-  "Shared by you" list with revoke; "Shared with you" list with hide/unhide.
+- **`/app/sharing`** — share your calendar with a person (email) or any team; "Shared by you"
+  list with revoke; "Shared with you" list with hide/unhide. The team picker lists every team
+  in the system, not just ones you belong to — acceptable for an internal tool.
 - **`/app/notifications`** — full list, newest first; Accept/Decline for invites,
   Share-back for shares; mark-all-read.
 - **Calendar page** — load expands to the visibility union with a `filter` query param

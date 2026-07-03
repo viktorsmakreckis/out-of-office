@@ -23,7 +23,7 @@
 	});
 
 	const selectedTeamName = $derived(
-		data.myTeams.find((team) => team.id === $form.teamId)?.name ?? ''
+		data.allTeams.find((team) => team.id === $form.teamId)?.name ?? ''
 	);
 </script>
 
@@ -59,7 +59,7 @@
 							<Select.Root type="single" name="teamId" bind:value={$form.teamId}>
 								<Select.Trigger id="share-team" class="w-full">{selectedTeamName}</Select.Trigger>
 								<Select.Content>
-									{#each data.myTeams as team (team.id)}
+									{#each data.allTeams as team (team.id)}
 										<Select.Item value={team.id}>{team.name}</Select.Item>
 									{/each}
 								</Select.Content>

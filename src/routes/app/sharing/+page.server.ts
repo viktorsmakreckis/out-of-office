@@ -43,11 +43,17 @@ async function nameMaps(userIds: string[], orgIds: string[]) {
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const currentUser = requireUser(locals);
-	const myOrgRows = await db
-		.select({ id: organization.id, name: organization.name })
-		.from(member)
-		.innerJoin(organization, eq(member.organizationId, organization.id))
-		.where(eq(member.userId, currentUser.id));
+	const [myOrgRows, allTeams] = await Promise.all([
+		db
+			.select({ id: organization.id, name: organization.name })
+			.from(member)
+			.innerJoin(organization, eq(member.organizationId, organization.id))
+			.where(eq(member.userId, currentUser.id)),
+		db
+			.select({ id: organization.id, name: organization.name })
+			.from(organization)
+			.orderBy(organization.name)
+	]);
 	const myOrgIds = myOrgRows.map((row) => row.id);
 
 	const receivedFilters = [eq(calendarShare.targetUserId, currentUser.id)];
@@ -87,7 +93,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const shareForm = await superValidate(zod4(shareTargetSchema), { id: 'share' });
 
 	return {
-		myTeams: myOrgRows,
+		allTeams,
 		givenShares: given.map((share) => ({
 			id: share.id,
 			pending: share.targetEmail !== null,
