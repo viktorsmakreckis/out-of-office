@@ -300,6 +300,8 @@
 	"channel_message_updated": "{emoji} {name} a modifié son absence : {range} ({label})",
 	"channel_message_deleted": "{emoji} {name} a annulé son absence : {range} ({label})",
 	"channel_message_test": "👋 Message de test d'Out of Office — ce canal est connecté.",
+	"digest_channel_header": "🗓️ {team} — absences pour {range}",
+	"digest_channel_empty": "🎉 Au complet — personne n'est absent sur {range}.",
 	"integrations_title": "Intégrations",
 	"integrations_description": "Publiez les absences dans les canaux de votre équipe.",
 	"integrations_provider_label": "Fournisseur",

@@ -300,6 +300,8 @@
 	"channel_message_updated": "{emoji} {name} zmienił(a) swoją nieobecność: {range} ({label})",
 	"channel_message_deleted": "{emoji} {name} odwołał(a) swoją nieobecność: {range} ({label})",
 	"channel_message_test": "👋 Wiadomość testowa z Out of Office — ten kanał jest połączony.",
+	"digest_channel_header": "🗓️ {team} — nieobecności w terminie {range}",
+	"digest_channel_empty": "🎉 Komplet — nikt nie jest nieobecny w terminie {range}.",
 	"integrations_title": "Integracje",
 	"integrations_description": "Publikuj nieobecności na kanałach swojego zespołu.",
 	"integrations_provider_label": "Dostawca",

@@ -25,6 +25,10 @@ const eventTypeEmoji: Record<EventType, string> = {
 	other: '📅'
 };
 
+export function emojiForType(type: string): string {
+	return eventTypeEmoji[type as EventType] ?? '📅';
+}
+
 const dateFmtCache = new Map<Locale, Intl.DateTimeFormat>();
 const timeFmtCache = new Map<Locale, Intl.DateTimeFormat>();
 
