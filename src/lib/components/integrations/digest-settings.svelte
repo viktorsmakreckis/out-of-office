@@ -18,7 +18,12 @@
 		form: data,
 		submitting,
 		enhance
-	} = superForm(form, { id: 'digest', dataType: 'json', validators: zod4Client(saveDigestSchema) });
+	} = superForm(form, {
+		id: 'digest',
+		dataType: 'json',
+		resetForm: false,
+		validators: zod4Client(saveDigestSchema)
+	});
 
 	const timezones = Intl.supportedValuesOf('timeZone');
 	const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -54,9 +59,11 @@
 					>{weekdayName($data.weekday)}</Select.Trigger
 				>
 				<Select.Content>
-					{#each weekdays as day (day)}
-						<Select.Item value={String(day)}>{weekdayName(day)}</Select.Item>
-					{/each}
+					<Select.Group>
+						{#each weekdays as day (day)}
+							<Select.Item value={String(day)}>{weekdayName(day)}</Select.Item>
+						{/each}
+					</Select.Group>
 				</Select.Content>
 			</Select.Root>
 		</Field.Field>
@@ -70,10 +77,12 @@
 					value !== undefined && value !== '' && ($data.hour = Number(value))}
 			>
 				<Select.Trigger id="digest-hour" class="w-full">{pad2($data.hour)}:00</Select.Trigger>
-				<Select.Content>
-					{#each hours as h (h)}
-						<Select.Item value={String(h)}>{pad2(h)}:00</Select.Item>
-					{/each}
+				<Select.Content class="max-h-72">
+					<Select.Group>
+						{#each hours as h (h)}
+							<Select.Item value={String(h)}>{pad2(h)}:00</Select.Item>
+						{/each}
+					</Select.Group>
 				</Select.Content>
 			</Select.Root>
 		</Field.Field>
@@ -83,9 +92,11 @@
 			<Select.Root type="single" bind:value={$data.timezone}>
 				<Select.Trigger id="digest-timezone" class="w-full">{$data.timezone}</Select.Trigger>
 				<Select.Content class="max-h-72">
-					{#each timezones as tz (tz)}
-						<Select.Item value={tz}>{tz}</Select.Item>
-					{/each}
+					<Select.Group>
+						{#each timezones as tz (tz)}
+							<Select.Item value={tz}>{tz}</Select.Item>
+						{/each}
+					</Select.Group>
 				</Select.Content>
 			</Select.Root>
 		</Field.Field>

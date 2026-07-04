@@ -320,6 +320,7 @@
 	"integrations_added": "Połączenie dodane.",
 	"integrations_removed": "Połączenie usunięte.",
 	"integrations_remove_cta": "Usuń",
+	"integrations_remove_confirm": "Potwierdź usunięcie",
 	"integrations_test_cta": "Wyślij test",
 	"integrations_test_sent": "Wiadomość testowa wysłana.",
 	"integrations_test_failed": "Wiadomość testowa nie powiodła się — sprawdź adres webhooka.",

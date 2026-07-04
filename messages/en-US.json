@@ -320,6 +320,7 @@
 	"integrations_added": "Connection added.",
 	"integrations_removed": "Connection removed.",
 	"integrations_remove_cta": "Remove",
+	"integrations_remove_confirm": "Confirm remove",
 	"integrations_test_cta": "Send test",
 	"integrations_test_sent": "Test message sent.",
 	"integrations_test_failed": "Test message failed — check the webhook URL.",

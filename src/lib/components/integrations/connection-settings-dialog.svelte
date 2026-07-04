@@ -14,6 +14,8 @@
 
 	let { row }: { row: ConnectionRow } = $props();
 
+	let confirmingRemove = $state(false);
+
 	/** Submit a single-toggle form by writing the value into its hidden input. */
 	function submitToggle(formId: string, inputName: string, value: boolean) {
 		const form = document.getElementById(formId);
@@ -76,7 +78,20 @@
 			</form>
 			<form method="POST" action="?/removeConnection" use:enhance>
 				<input type="hidden" name="id" value={row.id} />
-				<Button type="submit" variant="ghost" size="sm">{m.integrations_remove_cta()}</Button>
+				{#if confirmingRemove}
+					<Button type="submit" variant="destructive" size="sm">
+						{m.integrations_remove_confirm()}
+					</Button>
+				{:else}
+					<Button
+						type="button"
+						variant="destructive"
+						size="sm"
+						onclick={() => (confirmingRemove = true)}
+					>
+						{m.integrations_remove_cta()}
+					</Button>
+				{/if}
 			</form>
 		</Dialog.Footer>
 	</Dialog.Content>
