@@ -92,6 +92,13 @@
       "when": 1783119907282,
       "tag": "0012_smart_darkhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1783158318682,
+      "tag": "0013_aspiring_psynapse",
+      "breakpoints": true
     }
   ]
 }
