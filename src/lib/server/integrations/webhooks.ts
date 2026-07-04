@@ -73,16 +73,24 @@ async function recordDeliveryResult(connectionId: string, ok: boolean): Promise<
 		.where(eq(integrationConnection.id, connectionId));
 }
 
-/** Posts one message to one connection and updates its failure counter. */
+/** POSTs an already-formatted payload to one connection and updates its failure counter. */
+export async function deliverPayloadToConnection(
+	connection: { id: string; webhookUrl: string },
+	payload: unknown
+): Promise<boolean> {
+	const ok = await postJson(connection.webhookUrl, payload);
+	await recordDeliveryResult(connection.id, ok);
+	return ok;
+}
+
+/** Posts one event message to one connection and updates its failure counter. */
 export async function deliverToConnection(
 	connection: { id: string; provider: IntegrationProvider; webhookUrl: string },
 	message: OooMessage
 ): Promise<boolean> {
 	const payload = payloadFor(connection.provider, message);
 	if (payload === null) return false; // no formatter for this provider — nothing to deliver
-	const ok = await postJson(connection.webhookUrl, payload);
-	await recordDeliveryResult(connection.id, ok);
-	return ok;
+	return deliverPayloadToConnection(connection, payload);
 }
 
 /**
