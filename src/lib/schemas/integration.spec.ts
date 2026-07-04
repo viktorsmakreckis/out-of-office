@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addConnectionSchema } from './integration';
+import { addConnectionSchema, saveDigestSchema, updateConnectionDigestSchema } from './integration';
 
 describe('addConnectionSchema', () => {
 	it('accepts a valid connection', () => {
@@ -27,5 +27,40 @@ describe('addConnectionSchema', () => {
 		expect(
 			addConnectionSchema.safeParse({ provider: 'slack', webhookUrl: 'not a url' }).success
 		).toBe(false);
+	});
+});
+
+describe('saveDigestSchema', () => {
+	const valid = {
+		enabled: true,
+		weekday: 1,
+		hour: 8,
+		timezone: 'Europe/Riga',
+		postWhenEmpty: false
+	};
+
+	it('accepts a valid config', () => {
+		expect(saveDigestSchema.parse(valid)).toEqual(valid);
+	});
+
+	it('rejects an out-of-range weekday', () => {
+		expect(saveDigestSchema.safeParse({ ...valid, weekday: 8 }).success).toBe(false);
+	});
+
+	it('rejects an out-of-range hour', () => {
+		expect(saveDigestSchema.safeParse({ ...valid, hour: 24 }).success).toBe(false);
+	});
+
+	it('rejects an unknown timezone', () => {
+		expect(saveDigestSchema.safeParse({ ...valid, timezone: 'Mars/Olympus' }).success).toBe(false);
+	});
+});
+
+describe('updateConnectionDigestSchema', () => {
+	it('coerces the notifyDigest flag', () => {
+		expect(updateConnectionDigestSchema.parse({ id: 'c1', notifyDigest: 'false' })).toEqual({
+			id: 'c1',
+			notifyDigest: false
+		});
 	});
 });
