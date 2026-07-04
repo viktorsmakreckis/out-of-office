@@ -12,9 +12,10 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, locales, type Locale } from '$lib/paraglide/runtime';
-	import { addConnectionSchema } from '$lib/schemas/integration';
+	import { addConnectionSchema, saveDigestSchema } from '$lib/schemas/integration';
 	import { toFieldErrors } from '$lib/utils';
 	import ConnectionSettingsDialog from './connection-settings-dialog.svelte';
+	import DigestSettings from './digest-settings.svelte';
 	import FeedUrlField from './feed-url-field.svelte';
 
 	type Provider = Infer<typeof addConnectionSchema>['provider'];
@@ -32,12 +33,14 @@
 		connections,
 		feedUrl,
 		form,
-		teamLocale
+		teamLocale,
+		digestForm
 	}: {
 		connections: ConnectionRow[];
 		feedUrl: string;
 		form: SuperValidated<Infer<typeof addConnectionSchema>>;
 		teamLocale: Locale;
+		digestForm: SuperValidated<Infer<typeof saveDigestSchema>>;
 	} = $props();
 
 	const providerNames: Record<Provider, string> = {
@@ -171,6 +174,8 @@
 				</div>
 			</Field.Group>
 		</form>
+
+		<DigestSettings form={digestForm} />
 
 		<FeedUrlField url={feedUrl} description={m.feed_team_description()} />
 	</Card.Content>
