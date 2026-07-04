@@ -268,7 +268,11 @@
 							name="oooInApp"
 							bind:checked={$notificationsForm.oooInApp}
 						/>
-						<Switch name="oooEmail" bind:checked={$notificationsForm.oooEmail} />
+						<Switch
+							name="oooEmail"
+							bind:checked={$notificationsForm.oooEmail}
+							aria-label="{m.settings_notifications_ooo_label()}, {m.settings_notifications_channel_email()}"
+						/>
 
 						<Label for="pref-shared-in-app">{m.settings_notifications_shared_label()}</Label>
 						<Switch
@@ -276,7 +280,11 @@
 							name="sharedInApp"
 							bind:checked={$notificationsForm.sharedInApp}
 						/>
-						<Switch name="sharedEmail" bind:checked={$notificationsForm.sharedEmail} />
+						<Switch
+							name="sharedEmail"
+							bind:checked={$notificationsForm.sharedEmail}
+							aria-label="{m.settings_notifications_shared_label()}, {m.settings_notifications_channel_email()}"
+						/>
 					</div>
 					<div>
 						<Button type="submit" disabled={$notificationsSubmitting}>
