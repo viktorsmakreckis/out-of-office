@@ -390,6 +390,7 @@
 			feedUrl={data.integrations.feedUrl}
 			form={data.integrations.connectionForm}
 			teamLocale={data.integrations.teamLocale}
+			digestForm={data.integrations.digestForm}
 		/>
 	{/if}
 </div>

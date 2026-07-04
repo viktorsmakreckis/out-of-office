@@ -206,6 +206,7 @@ export const integrationConnection = pgTable(
 		webhookUrl: text('webhook_url').notNull(),
 		label: text('label'),
 		notifyOoo: boolean('notify_ooo').notNull().default(true),
+		notifyDigest: boolean('notify_digest').notNull().default(true),
 		// Team-owned resource: keep the connection alive when its creator's account is
 		// deleted (set null rather than cascade). Nullable so the FK can null out.
 		createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
@@ -237,5 +238,35 @@ export const calendarFeedToken = pgTable(
 	(table) => [
 		check('calendar_feed_token_owner_xor', sql`num_nonnulls(${table.userId}, ${table.orgId}) = 1`),
 		unique('calendar_feed_token_owner_unique').on(table.userId, table.orgId).nullsNotDistinct()
+	]
+);
+
+/**
+ * Per-team weekly digest schedule; one lazily-created row per team (absent row =
+ * disabled). weekday is ISO 1–7 (Mon=1); hour is 0–23 local to `timezone`. The
+ * scheduler fires at minute 0. lastSentWeekKey (ISO "2026-W28", in the team tz)
+ * guards against retry double-posts. See
+ * docs/superpowers/specs/2026-07-04-integrations-phase-2a-digests-design.md.
+ */
+export const teamDigestConfig = pgTable(
+	'team_digest_config',
+	{
+		orgId: text('org_id')
+			.primaryKey()
+			.references(() => organization.id, { onDelete: 'cascade' }),
+		enabled: boolean('enabled').notNull().default(false),
+		weekday: integer('weekday').notNull(),
+		hour: integer('hour').notNull(),
+		timezone: text('timezone').notNull(),
+		postWhenEmpty: boolean('post_when_empty').notNull().default(false),
+		lastSentWeekKey: text('last_sent_week_key'),
+		updatedAt: timestamp('updated_at', { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date())
+	},
+	(table) => [
+		check('team_digest_config_weekday_range', sql`${table.weekday} between 1 and 7`),
+		check('team_digest_config_hour_range', sql`${table.hour} between 0 and 23`)
 	]
 );

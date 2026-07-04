@@ -6,8 +6,12 @@ import type { Handle } from '@sveltejs/kit';
 import { getTextDirection } from '$lib/paraglide/runtime';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { startNotificationWorker } from '$lib/server/queue/worker';
+import { startDigestWorker } from '$lib/server/queue/digest-worker';
 
-if (!building) startNotificationWorker();
+if (!building) {
+	startNotificationWorker();
+	startDigestWorker();
+}
 
 const handleParaglide: Handle = ({ event, resolve }) =>
 	paraglideMiddleware(event.request, ({ request, locale }) => {

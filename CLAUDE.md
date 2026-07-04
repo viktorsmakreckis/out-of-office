@@ -27,10 +27,20 @@ You MUST use this tool whenever writing Svelte code before sending it to the use
 
 ---
 
-## Project Guidelines
-
-You must follow these whenever working on the project and making relevant edits:
+## General Project Guidelines
 
 - Use /karpathy-guidelines skill when writing code;
-- Use shadcn-svelte UI components where possible;
 - Do NOT co-author commits;
+
+---
+
+## Database Workflow
+
+Apply schema changes only with **`pnpm db:generate` → commit the generated migration → `pnpm db:migrate`**. Do **not** use `drizzle-kit push`.
+
+---
+
+## User Interface Workflow
+
+- Use shadcn-svelte UI components where possible;
+- Always wrap `Select.Item`s in `Select.Group`

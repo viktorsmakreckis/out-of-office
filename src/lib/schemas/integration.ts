@@ -23,3 +23,20 @@ export const updateConnectionNotifySchema = z.object({
 	id: z.string().min(1, { error: () => m.error_generic() }),
 	notifyOoo: z.enum(['true', 'false']).transform((value) => value === 'true')
 });
+
+const supportedTimeZones = new Set(Intl.supportedValuesOf('timeZone'));
+
+export const saveDigestSchema = z.object({
+	enabled: z.boolean(),
+	weekday: z.number().int().min(1).max(7),
+	hour: z.number().int().min(0).max(23),
+	timezone: z.string().refine((value) => supportedTimeZones.has(value), {
+		error: () => m.error_generic()
+	}),
+	postWhenEmpty: z.boolean()
+});
+
+export const updateConnectionDigestSchema = z.object({
+	id: z.string().min(1, { error: () => m.error_generic() }),
+	notifyDigest: z.enum(['true', 'false']).transform((value) => value === 'true')
+});
