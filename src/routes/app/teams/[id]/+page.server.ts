@@ -8,6 +8,8 @@ import { baseLocale, isLocale } from '$lib/paraglide/runtime';
 import {
 	addConnectionSchema,
 	connectionIdSchema,
+	saveDigestSchema,
+	updateConnectionDigestSchema,
 	updateConnectionNotifySchema
 } from '$lib/schemas/integration';
 import {
@@ -29,6 +31,7 @@ import {
 	organization,
 	user
 } from '$lib/server/db/schema';
+import { getDigestConfig, upsertDigestConfig } from '$lib/server/integrations/digest-config';
 import {
 	feedUrl,
 	getOrCreateFeedToken,
@@ -37,6 +40,7 @@ import {
 import { testMessage } from '$lib/server/integrations/message';
 import { deliverToConnection, isAllowedWebhookUrl } from '$lib/server/integrations/webhooks';
 import { notifyShareCreated } from '$lib/server/notifications';
+import { removeDigestSchedule, upsertDigestSchedule } from '$lib/server/queue/digest-schedule';
 import { createShare, shareNameMaps, type ShareEntity } from '$lib/server/sharing';
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
 
@@ -129,13 +133,14 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const canManage = membership.role === 'owner' || membership.role === 'admin';
 	let integrations = null;
 	if (canManage) {
-		const [connections, feedToken, connectionForm] = await Promise.all([
+		const [connections, feedToken, connectionForm, digestConfig] = await Promise.all([
 			db
 				.select({
 					id: integrationConnection.id,
 					provider: integrationConnection.provider,
 					label: integrationConnection.label,
 					notifyOoo: integrationConnection.notifyOoo,
+					notifyDigest: integrationConnection.notifyDigest,
 					consecutiveFailures: integrationConnection.consecutiveFailures,
 					lastFailureAt: integrationConnection.lastFailureAt
 				})
@@ -143,9 +148,35 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 				.where(eq(integrationConnection.orgId, params.id))
 				.orderBy(integrationConnection.createdAt),
 			getOrCreateFeedToken({ type: 'org', id: params.id }),
-			superValidate(zod4(addConnectionSchema), { id: 'connection' })
+			superValidate(zod4(addConnectionSchema), { id: 'connection' }),
+			getDigestConfig(params.id)
 		]);
-		integrations = { connections, feedUrl: feedUrl(feedToken), connectionForm, teamLocale };
+		const digestForm = await superValidate(
+			digestConfig
+				? {
+						enabled: digestConfig.enabled,
+						weekday: digestConfig.weekday,
+						hour: digestConfig.hour,
+						timezone: digestConfig.timezone,
+						postWhenEmpty: digestConfig.postWhenEmpty
+					}
+				: {
+						enabled: false,
+						weekday: 1,
+						hour: 9,
+						timezone: currentUser.timezone,
+						postWhenEmpty: false
+					},
+			zod4(saveDigestSchema),
+			{ id: 'digest' }
+		);
+		integrations = {
+			connections,
+			feedUrl: feedUrl(feedToken),
+			connectionForm,
+			teamLocale,
+			digestForm
+		};
 	}
 	return {
 		team,
@@ -444,6 +475,43 @@ export const actions: Actions = {
 		const updated = await db
 			.update(integrationConnection)
 			.set({ notifyOoo: form.data.notifyOoo })
+			.where(
+				and(
+					eq(integrationConnection.id, form.data.id),
+					eq(integrationConnection.orgId, event.params.id)
+				)
+			)
+			.returning({ id: integrationConnection.id });
+		if (updated.length === 0) error(404);
+		flash(event, { type: 'success', message: m.integrations_prefs_saved() });
+		return { form };
+	},
+
+	saveDigest: async (event) => {
+		const form = await superValidate(event.request, zod4(saveDigestSchema), { id: 'digest' });
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		await upsertDigestConfig(event.params.id, form.data);
+		if (form.data.enabled) {
+			await upsertDigestSchedule({ orgId: event.params.id, ...form.data });
+		} else {
+			await removeDigestSchedule(event.params.id);
+		}
+		flash(event, { type: 'success', message: m.digest_saved() });
+		return { form };
+	},
+
+	updateConnectionDigest: async (event) => {
+		const form = await superValidate(event.request, zod4(updateConnectionDigestSchema), {
+			id: 'connection-digest'
+		});
+		if (!form.valid) return fail(400, { form });
+		const currentUser = requireUser(event.locals);
+		requireManager(await requireMembership(currentUser.id, event.params.id));
+		const updated = await db
+			.update(integrationConnection)
+			.set({ notifyDigest: form.data.notifyDigest })
 			.where(
 				and(
 					eq(integrationConnection.id, form.data.id),

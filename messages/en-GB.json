@@ -302,6 +302,7 @@
 	"channel_message_test": "👋 Test message from Out of Office — this channel is connected.",
 	"digest_channel_header": "🗓️ {team} — time off for {range}",
 	"digest_channel_empty": "🎉 Full house — nobody's off during {range}.",
+	"digest_saved": "Digest settings saved.",
 	"integrations_title": "Integrations",
 	"integrations_description": "Post out-of-office updates to your team's channels.",
 	"integrations_provider_label": "Provider",
