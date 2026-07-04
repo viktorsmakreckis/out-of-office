@@ -10,6 +10,7 @@ import {
 	deleteAccountSchema,
 	profileSchema
 } from '$lib/schemas/auth';
+import { notificationPreferencesSchema } from '$lib/schemas/notification';
 import { auth } from '$lib/server/auth';
 import { authErrorMessage } from '$lib/server/auth-error';
 import {
@@ -17,12 +18,14 @@ import {
 	getOrCreateFeedToken,
 	regenerateFeedToken
 } from '$lib/server/integrations/feed-tokens';
+import { getChannelPrefs, upsertChannelPrefs } from '$lib/server/notification-preferences';
 import { checkRateLimit } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
-	const [profileForm, emailForm, passwordForm, deleteForm] = await Promise.all([
+	const channelPrefs = await getChannelPrefs(user.id);
+	const [profileForm, emailForm, passwordForm, deleteForm, notificationsForm] = await Promise.all([
 		superValidate(
 			{
 				name: user.name,
@@ -34,13 +37,18 @@ export const load: PageServerLoad = async ({ parent }) => {
 		),
 		superValidate(zod4(changeEmailSchema), { id: 'changeEmail' }),
 		superValidate(zod4(changePasswordSchema), { id: 'changePassword' }),
-		superValidate(zod4(deleteAccountSchema), { id: 'deleteAccount' })
+		superValidate(zod4(deleteAccountSchema), { id: 'deleteAccount' }),
+		superValidate(channelPrefs, zod4(notificationPreferencesSchema), {
+			id: 'notifications',
+			errors: false
+		})
 	]);
 	return {
 		profileForm,
 		emailForm,
 		passwordForm,
 		deleteForm,
+		notificationsForm,
 		feedUrl: feedUrl(await getOrCreateFeedToken({ type: 'user', id: user.id }))
 	};
 };
@@ -126,6 +134,23 @@ export const actions: Actions = {
 			303,
 			'/app/settings',
 			{ type: 'success', message: m.settings_password_saved() },
+			event
+		);
+	},
+	notifications: async (event) => {
+		const form = await superValidate(event.request, zod4(notificationPreferencesSchema), {
+			id: 'notifications'
+		});
+		if (!form.valid) return fail(400, { form });
+
+		const user = event.locals.user;
+		if (!user) throw kitRedirect(303, '/login');
+		await upsertChannelPrefs(user.id, form.data);
+
+		redirect(
+			303,
+			'/app/settings',
+			{ type: 'success', message: m.settings_notifications_saved() },
 			event
 		);
 	},

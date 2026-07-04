@@ -24,3 +24,13 @@ After calling the list-sections tool, you MUST analyze the returned documentatio
 
 Analyzes Svelte code and returns issues and suggestions.
 You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
+
+---
+
+## Project Guidelines
+
+You must follow these whenever working on the project and making relevant edits:
+
+- Use /karpathy-guidelines skill when writing code;
+- Use shadcn-svelte UI components where possible;
+- Do NOT co-author commits;

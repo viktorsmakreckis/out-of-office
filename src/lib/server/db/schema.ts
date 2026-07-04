@@ -159,6 +159,25 @@ export const notification = pgTable(
 	(table) => [index('notification_user_id_idx').on(table.userId, table.createdAt)]
 );
 
+/**
+ * Per-user notification channel preferences. One row per user, created lazily on
+ * first save; an absent row is read as all-on (see notification-preferences.ts),
+ * so existing users keep receiving everything until they opt out.
+ */
+export const notificationPreference = pgTable('notification_preference', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	oooInApp: boolean('ooo_in_app').notNull().default(true),
+	oooEmail: boolean('ooo_email').notNull().default(true),
+	sharedInApp: boolean('shared_in_app').notNull().default(true),
+	sharedEmail: boolean('shared_email').notNull().default(true),
+	updatedAt: timestamp('updated_at', { withTimezone: true })
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date())
+});
+
 export const integrationProviderEnum = pgEnum('integration_provider', [
 	'slack',
 	'discord',
@@ -186,6 +205,7 @@ export const integrationConnection = pgTable(
 		kind: integrationKindEnum('kind').notNull().default('webhook'),
 		webhookUrl: text('webhook_url').notNull(),
 		label: text('label'),
+		notifyOoo: boolean('notify_ooo').notNull().default(true),
 		// Team-owned resource: keep the connection alive when its creator's account is
 		// deleted (set null rather than cascade). Nullable so the FK can null out.
 		createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),

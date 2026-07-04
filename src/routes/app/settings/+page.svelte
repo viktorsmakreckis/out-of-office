@@ -7,8 +7,10 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { Switch } from '$lib/components/ui/switch';
 	import { m } from '$lib/paraglide/messages.js';
 	import { locales, type Locale } from '$lib/paraglide/runtime';
 	import {
@@ -17,6 +19,7 @@
 		deleteAccountSchema,
 		profileSchema
 	} from '$lib/schemas/auth';
+	import { notificationPreferencesSchema } from '$lib/schemas/notification';
 	import { toFieldErrors } from '$lib/utils';
 
 	let { data } = $props();
@@ -64,6 +67,13 @@
 		submitting: passwordSubmitting,
 		enhance: passwordEnhance
 	} = superForm(data.passwordForm, { validators: zod4Client(changePasswordSchema) });
+
+	// svelte-ignore state_referenced_locally
+	const {
+		form: notificationsForm,
+		submitting: notificationsSubmitting,
+		enhance: notificationsEnhance
+	} = superForm(data.notificationsForm, { validators: zod4Client(notificationPreferencesSchema) });
 
 	// svelte-ignore state_referenced_locally
 	const {
@@ -228,6 +238,58 @@
 						<Button type="submit" disabled={$passwordSubmitting}>
 							{#if $passwordSubmitting}<Spinner />{/if}
 							{m.settings_password_cta()}
+						</Button>
+					</div>
+				</Field.Group>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>{m.settings_notifications_title()}</Card.Title>
+			<Card.Description>{m.settings_notifications_description()}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/notifications" use:notificationsEnhance>
+				<Field.Group>
+					<div class="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 gap-y-4">
+						<span></span>
+						<span class="text-sm text-muted-foreground">
+							{m.settings_notifications_channel_in_app()}
+						</span>
+						<span class="text-sm text-muted-foreground">
+							{m.settings_notifications_channel_email()}
+						</span>
+
+						<Label for="pref-ooo-in-app">{m.settings_notifications_ooo_label()}</Label>
+						<Switch
+							id="pref-ooo-in-app"
+							name="oooInApp"
+							bind:checked={$notificationsForm.oooInApp}
+						/>
+						<Switch
+							name="oooEmail"
+							bind:checked={$notificationsForm.oooEmail}
+							aria-label="{m.settings_notifications_ooo_label()}, {m.settings_notifications_channel_email()}"
+						/>
+
+						<Label for="pref-shared-in-app">{m.settings_notifications_shared_label()}</Label>
+						<Switch
+							id="pref-shared-in-app"
+							name="sharedInApp"
+							bind:checked={$notificationsForm.sharedInApp}
+						/>
+						<Switch
+							name="sharedEmail"
+							bind:checked={$notificationsForm.sharedEmail}
+							aria-label="{m.settings_notifications_shared_label()}, {m.settings_notifications_channel_email()}"
+						/>
+					</div>
+					<div>
+						<Button type="submit" disabled={$notificationsSubmitting}>
+							{#if $notificationsSubmitting}<Spinner />{/if}
+							{m.save()}
 						</Button>
 					</div>
 				</Field.Group>

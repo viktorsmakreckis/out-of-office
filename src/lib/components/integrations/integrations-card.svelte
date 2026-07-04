@@ -10,6 +10,8 @@
 	import * as Item from '$lib/components/ui/item';
 	import * as Select from '$lib/components/ui/select';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { Switch } from '$lib/components/ui/switch';
+	import { Label } from '$lib/components/ui/label';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, locales, type Locale } from '$lib/paraglide/runtime';
 	import { addConnectionSchema } from '$lib/schemas/integration';
@@ -21,6 +23,7 @@
 		id: string;
 		provider: Provider;
 		label: string | null;
+		notifyOoo: boolean;
 		consecutiveFailures: number;
 		lastFailureAt: Date | null;
 	};
@@ -121,6 +124,32 @@
 							</Item.Description>
 						</Item.Content>
 						<Item.Actions>
+							<form
+								id="notify-form-{row.id}"
+								method="POST"
+								action="?/updateConnectionNotify"
+								use:enhance
+								class="flex items-center gap-2"
+							>
+								<input type="hidden" name="id" value={row.id} />
+								<input type="hidden" name="notifyOoo" value={String(row.notifyOoo)} />
+								<Label for="notify-{row.id}" class="text-sm text-muted-foreground">
+									{m.integrations_notify_ooo_label()}
+								</Label>
+								<Switch
+									id="notify-{row.id}"
+									checked={row.notifyOoo}
+									onCheckedChange={(value) => {
+										const notifyForm = document.getElementById(`notify-form-${row.id}`);
+										if (!(notifyForm instanceof HTMLFormElement)) return;
+										const input = notifyForm.querySelector('input[name="notifyOoo"]');
+										if (input instanceof HTMLInputElement) {
+											input.value = String(value);
+											notifyForm.requestSubmit();
+										}
+									}}
+								/>
+							</form>
 							<form method="POST" action="?/testConnection" use:enhance>
 								<input type="hidden" name="id" value={row.id} />
 								<Button type="submit" variant="outline" size="sm">

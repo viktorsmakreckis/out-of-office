@@ -110,7 +110,8 @@ export async function postEventToTeamChannels(actorId: string, event: ChannelEve
 					integrationConnection.orgId,
 					memberships.map((row) => row.organizationId)
 				),
-				eq(integrationConnection.kind, 'webhook')
+				eq(integrationConnection.kind, 'webhook'),
+				eq(integrationConnection.notifyOoo, true)
 			)
 		);
 	const results = await Promise.allSettled(
