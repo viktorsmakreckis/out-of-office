@@ -18,7 +18,7 @@
 		form: data,
 		submitting,
 		enhance
-	} = superForm(form, { id: 'digest', validators: zod4Client(saveDigestSchema) });
+	} = superForm(form, { id: 'digest', dataType: 'json', validators: zod4Client(saveDigestSchema) });
 
 	const timezones = Intl.supportedValuesOf('timeZone');
 	const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -39,7 +39,7 @@
 
 	<div class="flex items-center justify-between gap-2">
 		<Label for="digest-enabled">{m.digest_enable_label()}</Label>
-		<Switch id="digest-enabled" name="enabled" bind:checked={$data.enabled} />
+		<Switch id="digest-enabled" bind:checked={$data.enabled} />
 	</div>
 
 	{#if $data.enabled}
@@ -47,7 +47,6 @@
 			<Field.Label for="digest-weekday">{m.digest_weekday_label()}</Field.Label>
 			<Select.Root
 				type="single"
-				name="weekday"
 				value={String($data.weekday)}
 				onValueChange={(value) => value && ($data.weekday = Number(value))}
 			>
@@ -66,7 +65,6 @@
 			<Field.Label for="digest-hour">{m.digest_hour_label()}</Field.Label>
 			<Select.Root
 				type="single"
-				name="hour"
 				value={String($data.hour)}
 				onValueChange={(value) =>
 					value !== undefined && value !== '' && ($data.hour = Number(value))}
@@ -82,7 +80,7 @@
 
 		<Field.Field>
 			<Field.Label for="digest-timezone">{m.digest_timezone_label()}</Field.Label>
-			<Select.Root type="single" name="timezone" bind:value={$data.timezone}>
+			<Select.Root type="single" bind:value={$data.timezone}>
 				<Select.Trigger id="digest-timezone" class="w-full">{$data.timezone}</Select.Trigger>
 				<Select.Content class="max-h-72">
 					{#each timezones as tz (tz)}
@@ -94,7 +92,7 @@
 
 		<div class="flex items-center justify-between gap-2">
 			<Label for="digest-empty">{m.digest_post_when_empty_label()}</Label>
-			<Switch id="digest-empty" name="postWhenEmpty" bind:checked={$data.postWhenEmpty} />
+			<Switch id="digest-empty" bind:checked={$data.postWhenEmpty} />
 		</div>
 	{/if}
 
