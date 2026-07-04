@@ -92,7 +92,7 @@ BullMQ 5's Job Scheduler API (`upsertJobScheduler` / `getJobSchedulers` /
   The scheduler is created with `{ pattern, tz: timezone }` so BullMQ does the
   timezone math and fires at the team's local wall-clock time.
 - **`upsertDigestSchedule(config)`** — `queue.upsertJobScheduler('digest:<orgId>',
-  { pattern, tz }, { name: 'weekly-digest', data: { orgId } })`. Called after any save
+{ pattern, tz }, { name: 'weekly-digest', data: { orgId } })`. Called after any save
   that leaves the digest enabled.
 - **`removeDigestSchedule(orgId)`** — `queue.removeJobScheduler('digest:<orgId>')`.
   Called when a digest is disabled.
@@ -141,8 +141,8 @@ New module `src/lib/server/integrations/digest.ts`. `sendTeamDigest(orgId)`:
 3. If `weekKey === lastSentWeekKey` → return without posting (retry guard).
 4. Select member events overlapping the window. The org's member user ids come from
    `member`; a permissive SQL prefilter (`start < weekEndExclusive AND end >=
-   weekStart`) narrows candidates, and a pure, tested `overlapsWeek(event, weekStart,
-   weekEndExclusive)` makes the final decision. Overlap uses **end-exclusive
+weekStart`) narrows candidates, and a pure, tested `overlapsWeek(event, weekStart,
+weekEndExclusive)` makes the final decision. Overlap uses **end-exclusive
    normalization**: all-day rows (stored UTC-midnight, end-inclusive by date) are
    treated as `[start, end + 1 day)`; timed rows as `[start, end)` — the same DTEND+1
    rule already in `ical.ts`.
@@ -151,10 +151,10 @@ New module `src/lib/server/integrations/digest.ts`. `sendTeamDigest(orgId)`:
    type DigestItem = { emoji: string; label: string; dateRange: string };
    type DigestEntry = { actorName: string; items: DigestItem[] };
    type DigestMessage = {
-     orgName: string;
-     weekLabel: string;
-     entries: DigestEntry[];
-     locale: Locale;
+   	orgName: string;
+   	weekLabel: string;
+   	entries: DigestEntry[];
+   	locale: Locale;
    };
    ```
    Rendered in the **team locale** (a channel has no single reader — consistent with

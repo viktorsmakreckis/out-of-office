@@ -69,7 +69,9 @@ export function zonedWeekBounds(now: Date, tz: string, locale: string): WeekBoun
 	const local = zonedParts(now, tz);
 	const iso = isoWeekday(local.year, local.month, local.day);
 	// Local calendar date of this week's Monday.
-	const monday = new Date(Date.UTC(local.year, local.month - 1, local.day) - (iso - 1) * 86_400_000);
+	const monday = new Date(
+		Date.UTC(local.year, local.month - 1, local.day) - (iso - 1) * 86_400_000
+	);
 	const my = monday.getUTCFullYear();
 	const mm = monday.getUTCMonth() + 1;
 	const md = monday.getUTCDate();
@@ -102,5 +104,8 @@ export function overlapsWeek(
 	weekEndExclusive: Date
 ): boolean {
 	const endExclusive = event.allDay ? new Date(event.end.getTime() + 86_400_000) : event.end;
-	return event.start.getTime() < weekEndExclusive.getTime() && endExclusive.getTime() > weekStart.getTime();
+	return (
+		event.start.getTime() < weekEndExclusive.getTime() &&
+		endExclusive.getTime() > weekStart.getTime()
+	);
 }

@@ -31,22 +31,38 @@ describe('overlapsWeek', () => {
 	const weekEndExclusive = new Date('2026-07-13T00:00:00Z');
 
 	it('includes an all-day event on the first day (end-inclusive by date)', () => {
-		const e = { allDay: true, start: new Date('2026-07-06T00:00:00Z'), end: new Date('2026-07-06T00:00:00Z') };
+		const e = {
+			allDay: true,
+			start: new Date('2026-07-06T00:00:00Z'),
+			end: new Date('2026-07-06T00:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(true);
 	});
 
 	it('excludes an all-day event ending the day before the week starts', () => {
-		const e = { allDay: true, start: new Date('2026-07-05T00:00:00Z'), end: new Date('2026-07-05T00:00:00Z') };
+		const e = {
+			allDay: true,
+			start: new Date('2026-07-05T00:00:00Z'),
+			end: new Date('2026-07-05T00:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(false);
 	});
 
 	it('includes a timed event overlapping the last day', () => {
-		const e = { allDay: false, start: new Date('2026-07-12T22:00:00Z'), end: new Date('2026-07-12T23:00:00Z') };
+		const e = {
+			allDay: false,
+			start: new Date('2026-07-12T22:00:00Z'),
+			end: new Date('2026-07-12T23:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(true);
 	});
 
 	it('excludes an event entirely after the week', () => {
-		const e = { allDay: false, start: new Date('2026-07-13T00:00:00Z'), end: new Date('2026-07-13T01:00:00Z') };
+		const e = {
+			allDay: false,
+			start: new Date('2026-07-13T00:00:00Z'),
+			end: new Date('2026-07-13T01:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(false);
 	});
 });

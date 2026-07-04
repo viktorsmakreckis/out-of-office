@@ -26,6 +26,7 @@
 ## File Structure
 
 **New files:**
+
 - `src/lib/server/integrations/digest-week.ts` — pure week/timezone math: `zonedWeekBounds`, `overlapsWeek`. No db.
 - `src/lib/server/integrations/digest-week.spec.ts` — tests for the above.
 - `src/lib/server/integrations/digest-message.ts` — `DigestMessage` types, `buildDigestMessage`, channel text composition. No db.
@@ -42,6 +43,7 @@
 - `src/lib/components/integrations/digest-settings.svelte` — weekly-digest subsection form.
 
 **Modified files:**
+
 - `src/lib/server/db/schema.ts` — add `teamDigestConfig` table + `notifyDigest` column.
 - `src/lib/server/integrations/message.ts` — export `emojiForType`.
 - `src/lib/server/integrations/formatters.ts` — add `digestPayloadFor` + per-provider digest payloads.
@@ -58,10 +60,12 @@
 ## Task 1: Schema + migration
 
 **Files:**
+
 - Modify: `src/lib/server/db/schema.ts`
 - Create: migration under `drizzle/` (generated)
 
 **Interfaces:**
+
 - Produces: `teamDigestConfig` table export; `integrationConnection.notifyDigest` column. Row type `typeof teamDigestConfig.$inferSelect` has `{ orgId, enabled, weekday, hour, timezone, postWhenEmpty, lastSentWeekKey, updatedAt }`.
 
 - [ ] **Step 1: Add the `notifyDigest` column to `integrationConnection`.** In `src/lib/server/db/schema.ts`, inside the `integrationConnection` table definition, add after the `notifyOoo` line:
@@ -131,10 +135,12 @@ git commit -m "feat(db): add team_digest_config table and notify_digest column"
 ## Task 2: Week/timezone math (`digest-week.ts`)
 
 **Files:**
+
 - Create: `src/lib/server/integrations/digest-week.ts`
 - Test: `src/lib/server/integrations/digest-week.spec.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type WeekBounds = { weekStart: Date; weekEndExclusive: Date; weekKey: string; weekLabel: string }`
   - `zonedWeekBounds(now: Date, tz: string, locale: string): WeekBounds`
@@ -176,22 +182,38 @@ describe('overlapsWeek', () => {
 	const weekEndExclusive = new Date('2026-07-13T00:00:00Z');
 
 	it('includes an all-day event on the first day (end-inclusive by date)', () => {
-		const e = { allDay: true, start: new Date('2026-07-06T00:00:00Z'), end: new Date('2026-07-06T00:00:00Z') };
+		const e = {
+			allDay: true,
+			start: new Date('2026-07-06T00:00:00Z'),
+			end: new Date('2026-07-06T00:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(true);
 	});
 
 	it('excludes an all-day event ending the day before the week starts', () => {
-		const e = { allDay: true, start: new Date('2026-07-05T00:00:00Z'), end: new Date('2026-07-05T00:00:00Z') };
+		const e = {
+			allDay: true,
+			start: new Date('2026-07-05T00:00:00Z'),
+			end: new Date('2026-07-05T00:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(false);
 	});
 
 	it('includes a timed event overlapping the last day', () => {
-		const e = { allDay: false, start: new Date('2026-07-12T22:00:00Z'), end: new Date('2026-07-12T23:00:00Z') };
+		const e = {
+			allDay: false,
+			start: new Date('2026-07-12T22:00:00Z'),
+			end: new Date('2026-07-12T23:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(true);
 	});
 
 	it('excludes an event entirely after the week', () => {
-		const e = { allDay: false, start: new Date('2026-07-13T00:00:00Z'), end: new Date('2026-07-13T01:00:00Z') };
+		const e = {
+			allDay: false,
+			start: new Date('2026-07-13T00:00:00Z'),
+			end: new Date('2026-07-13T01:00:00Z')
+		};
 		expect(overlapsWeek(e, weekStart, weekEndExclusive)).toBe(false);
 	});
 });
@@ -276,7 +298,9 @@ export function zonedWeekBounds(now: Date, tz: string, locale: string): WeekBoun
 	const local = zonedParts(now, tz);
 	const iso = isoWeekday(local.year, local.month, local.day);
 	// Local calendar date of this week's Monday.
-	const monday = new Date(Date.UTC(local.year, local.month - 1, local.day) - (iso - 1) * 86_400_000);
+	const monday = new Date(
+		Date.UTC(local.year, local.month - 1, local.day) - (iso - 1) * 86_400_000
+	);
 	const my = monday.getUTCFullYear();
 	const mm = monday.getUTCMonth() + 1;
 	const md = monday.getUTCDate();
@@ -309,7 +333,10 @@ export function overlapsWeek(
 	weekEndExclusive: Date
 ): boolean {
 	const endExclusive = event.allDay ? new Date(event.end.getTime() + 86_400_000) : event.end;
-	return event.start.getTime() < weekEndExclusive.getTime() && endExclusive.getTime() > weekStart.getTime();
+	return (
+		event.start.getTime() < weekEndExclusive.getTime() &&
+		endExclusive.getTime() > weekStart.getTime()
+	);
 }
 ```
 
@@ -330,12 +357,14 @@ git commit -m "feat(integrations): add timezone-aware week bounds and overlap lo
 ## Task 3: Digest neutral message (`digest-message.ts`)
 
 **Files:**
+
 - Modify: `src/lib/server/integrations/message.ts` (export `emojiForType`)
 - Create: `src/lib/server/integrations/digest-message.ts`
 - Test: `src/lib/server/integrations/digest-message.spec.ts`
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 
 **Interfaces:**
+
 - Consumes: `formatDateRange`, `emojiForType` from `./message`; `eventTypeLabelFor` from `$lib/events/labels`.
 - Produces:
   - `type DigestItem = { emoji: string; label: string; dateRange: string }`
@@ -382,8 +411,22 @@ import { describe, expect, it } from 'vitest';
 import { buildDigestMessage, digestHeaderText, digestRosterText } from './digest-message';
 
 const events = [
-	{ userName: 'Bob', type: 'sick_leave', title: null, allDay: true, start: new Date('2026-07-10T00:00:00Z'), end: new Date('2026-07-10T00:00:00Z') },
-	{ userName: 'Alice', type: 'vacation', title: null, allDay: true, start: new Date('2026-07-06T00:00:00Z'), end: new Date('2026-07-08T00:00:00Z') }
+	{
+		userName: 'Bob',
+		type: 'sick_leave',
+		title: null,
+		allDay: true,
+		start: new Date('2026-07-10T00:00:00Z'),
+		end: new Date('2026-07-10T00:00:00Z')
+	},
+	{
+		userName: 'Alice',
+		type: 'vacation',
+		title: null,
+		allDay: true,
+		start: new Date('2026-07-06T00:00:00Z'),
+		end: new Date('2026-07-08T00:00:00Z')
+	}
 ];
 
 describe('buildDigestMessage', () => {
@@ -391,14 +434,34 @@ describe('buildDigestMessage', () => {
 		const m = buildDigestMessage('Team A', 'Jul 6 – Jul 12', events, 'en-GB');
 		expect(m.orgName).toBe('Team A');
 		expect(m.entries.map((e) => e.actorName)).toEqual(['Alice', 'Bob']);
-		expect(m.entries[0].items[0]).toEqual({ emoji: '🌴', label: 'Vacation', dateRange: '6 Jul – 8 Jul' });
-		expect(m.entries[1].items[0]).toEqual({ emoji: '🤒', label: 'Sick leave', dateRange: '10 Jul' });
+		expect(m.entries[0].items[0]).toEqual({
+			emoji: '🌴',
+			label: 'Vacation',
+			dateRange: '6 Jul – 8 Jul'
+		});
+		expect(m.entries[1].items[0]).toEqual({
+			emoji: '🤒',
+			label: 'Sick leave',
+			dateRange: '10 Jul'
+		});
 	});
 
 	it('uses the title as the label when present', () => {
-		const m = buildDigestMessage('Team A', 'Jul 6 – Jul 12', [
-			{ userName: 'Alice', type: 'business_trip', title: 'Berlin', allDay: true, start: new Date('2026-07-06T00:00:00Z'), end: new Date('2026-07-06T00:00:00Z') }
-		], 'en-GB');
+		const m = buildDigestMessage(
+			'Team A',
+			'Jul 6 – Jul 12',
+			[
+				{
+					userName: 'Alice',
+					type: 'business_trip',
+					title: 'Berlin',
+					allDay: true,
+					start: new Date('2026-07-06T00:00:00Z'),
+					end: new Date('2026-07-06T00:00:00Z')
+				}
+			],
+			'en-GB'
+		);
 		expect(m.entries[0].items[0].label).toBe('Berlin');
 	});
 });
@@ -414,7 +477,9 @@ describe('digest text', () => {
 
 	it('renders the full-house line when nobody is off', () => {
 		const m = buildDigestMessage('Team A', 'Jul 6 – Jul 12', [], 'en-GB');
-		expect(digestRosterText(m, (s) => `*${s}*`)).toBe('🎉 Full house — nobody\'s off during Jul 6 – Jul 12.');
+		expect(digestRosterText(m, (s) => `*${s}*`)).toBe(
+			"🎉 Full house — nobody's off during Jul 6 – Jul 12."
+		);
 	});
 });
 ```
@@ -514,10 +579,12 @@ git commit -m "feat(integrations): add weekly-digest neutral message builder"
 ## Task 4: Provider digest formatters (`formatters.ts`)
 
 **Files:**
+
 - Modify: `src/lib/server/integrations/formatters.ts`
 - Test: `src/lib/server/integrations/formatters.spec.ts` (append)
 
 **Interfaces:**
+
 - Consumes: `DigestMessage`, `digestHeaderText`, `digestRosterText` from `./digest-message`.
 - Produces: `digestPayloadFor(provider: IntegrationProvider, message: DigestMessage): unknown` (null for an unknown provider).
 
@@ -530,7 +597,16 @@ import { digestPayloadFor } from './formatters';
 const digest = buildDigestMessage(
 	'Team A',
 	'Jul 6 – Jul 12',
-	[{ userName: 'Alice', type: 'vacation', title: null, allDay: true, start: new Date('2026-07-06T00:00:00Z'), end: new Date('2026-07-08T00:00:00Z') }],
+	[
+		{
+			userName: 'Alice',
+			type: 'vacation',
+			title: null,
+			allDay: true,
+			start: new Date('2026-07-06T00:00:00Z'),
+			end: new Date('2026-07-08T00:00:00Z')
+		}
+	],
 	'en-GB'
 );
 const digestHeader = '🗓️ Team A — time off for Jul 6 – Jul 12';
@@ -595,7 +671,10 @@ export function slackDigestPayload(message: DigestMessage): unknown {
 export function discordDigestPayload(message: DigestMessage): unknown {
 	return {
 		embeds: [
-			{ title: digestHeaderText(message), description: digestRosterText(message, (s) => `**${s}**`) }
+			{
+				title: digestHeaderText(message),
+				description: digestRosterText(message, (s) => `**${s}**`)
+			}
 		]
 	};
 }
@@ -650,10 +729,12 @@ git commit -m "feat(integrations): add per-provider weekly-digest formatters"
 ## Task 5: Cron/scheduler-id helpers (`queue/digest-cron.ts`)
 
 **Files:**
+
 - Create: `src/lib/server/queue/digest-cron.ts`
 - Test: `src/lib/server/queue/digest-cron.spec.ts`
 
 **Interfaces:**
+
 - Produces:
   - `const DIGEST_QUEUE_NAME = 'digests'`
   - `type DigestJobData = { orgId: string }`
@@ -727,9 +808,11 @@ git commit -m "feat(queue): add digest cron pattern and scheduler-id helpers"
 ## Task 6: Extract `deliverPayloadToConnection` (`webhooks.ts`)
 
 **Files:**
+
 - Modify: `src/lib/server/integrations/webhooks.ts`
 
 **Interfaces:**
+
 - Produces: `deliverPayloadToConnection(connection: { id: string; webhookUrl: string }, payload: unknown): Promise<boolean>` — POSTs a pre-built payload and updates the connection's failure counter. `deliverToConnection` now delegates to it.
 
 - [ ] **Step 1: Refactor.** In `src/lib/server/integrations/webhooks.ts`, replace the `deliverToConnection` function with:
@@ -778,9 +861,11 @@ git commit -m "refactor(integrations): extract payload-agnostic deliverPayloadTo
 ## Task 7: Digest config accessors (`digest-config.ts`)
 
 **Files:**
+
 - Create: `src/lib/server/integrations/digest-config.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type DigestConfig = typeof teamDigestConfig.$inferSelect`
   - `getDigestConfig(orgId: string): Promise<DigestConfig | null>`
@@ -860,10 +945,12 @@ git commit -m "feat(integrations): add team digest config accessors"
 ## Task 8: Schedule lifecycle (`queue/digest-schedule.ts`)
 
 **Files:**
+
 - Create: `src/lib/server/queue/digest-schedule.ts`
 - Test: `src/lib/server/queue/digest-schedule.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DIGEST_QUEUE_NAME`, `digestSchedulerId`, `digestCronPattern` from `./digest-cron`; `listEnabledDigestConfigs` from `$lib/server/integrations/digest-config`; `getRedisConnection` from `./connection`.
 - Produces:
   - `upsertDigestSchedule(config: { orgId; weekday; hour; timezone }): Promise<void>`
@@ -983,9 +1070,11 @@ git commit -m "feat(queue): add per-team digest schedule lifecycle + reconcile"
 ## Task 9: Digest orchestrator (`digest.ts`)
 
 **Files:**
+
 - Create: `src/lib/server/integrations/digest.ts`
 
 **Interfaces:**
+
 - Consumes: `getDigestConfig`, `setDigestLastSentWeekKey` (`./digest-config`); `zonedWeekBounds`, `overlapsWeek` (`./digest-week`); `buildDigestMessage` (`./digest-message`); `digestPayloadFor` (`./formatters`); `deliverPayloadToConnection` (`./webhooks`); `removeDigestSchedule` (`$lib/server/queue/digest-schedule`).
 - Produces: `sendTeamDigest(orgId: string, now?: Date): Promise<void>`.
 
@@ -995,7 +1084,13 @@ git commit -m "feat(queue): add per-team digest schedule lifecycle + reconcile"
 import { and, eq, gte, inArray, lt } from 'drizzle-orm';
 import { baseLocale, isLocale, type Locale } from '$lib/paraglide/runtime';
 import { db } from '$lib/server/db';
-import { calendarEvent, integrationConnection, member, organization, user } from '$lib/server/db/schema';
+import {
+	calendarEvent,
+	integrationConnection,
+	member,
+	organization,
+	user
+} from '$lib/server/db/schema';
 import { removeDigestSchedule } from '$lib/server/queue/digest-schedule';
 import { getDigestConfig, setDigestLastSentWeekKey } from './digest-config';
 import { buildDigestMessage, type DigestSourceEvent } from './digest-message';
@@ -1094,8 +1189,7 @@ export async function sendTeamDigest(orgId: string, now: Date = new Date()): Pro
 		})
 	);
 	for (const result of results) {
-		if (result.status === 'rejected')
-			console.error('[digest] delivery failed:', result.reason);
+		if (result.status === 'rejected') console.error('[digest] delivery failed:', result.reason);
 	}
 	await setDigestLastSentWeekKey(orgId, weekKey);
 }
@@ -1118,11 +1212,13 @@ git commit -m "feat(integrations): add sendTeamDigest orchestrator"
 ## Task 10: Digest worker + boot wiring
 
 **Files:**
+
 - Create: `src/lib/server/queue/digest-worker.ts`
 - Test: `src/lib/server/queue/digest-worker.spec.ts`
 - Modify: `src/hooks.server.ts`
 
 **Interfaces:**
+
 - Consumes: `getRedisConnection` (`./connection`); `DIGEST_QUEUE_NAME`, `DigestJobData` (`./digest-cron`); `sendTeamDigest` (`$lib/server/integrations/digest`); `reconcileDigestSchedules` (`./digest-schedule`).
 - Produces: `startDigestWorker(): void`.
 
@@ -1222,10 +1318,12 @@ git commit -m "feat(queue): start the digest worker and reconcile schedules on b
 ## Task 11: Digest form schemas (`schemas/integration.ts`)
 
 **Files:**
+
 - Modify: `src/lib/schemas/integration.ts`
 - Test: `src/lib/schemas/integration.spec.ts` (append)
 
 **Interfaces:**
+
 - Produces:
   - `saveDigestSchema` — validates `{ enabled: boolean; weekday: 1–7 int; hour: 0–23 int; timezone: supported IANA; postWhenEmpty: boolean }`. Real types (no string transforms): the digest form is a client `superForm` in the app's default form mode — exactly like the settings notification-preferences form (`z.boolean()` + named `Switch`) — and superforms coerces the submitted select/switch fields back to these types.
   - `updateConnectionDigestSchema` — `{ id: string; notifyDigest: boolean }`. Keeps the `z.enum(['true','false']).transform(...)` shape of `updateConnectionNotifySchema`, because it backs an instant-submit toggle (hidden input), not a superForm store.
@@ -1236,7 +1334,13 @@ git commit -m "feat(queue): start the digest worker and reconcile schedules on b
 import { saveDigestSchema, updateConnectionDigestSchema } from './integration';
 
 describe('saveDigestSchema', () => {
-	const valid = { enabled: true, weekday: 1, hour: 8, timezone: 'Europe/Riga', postWhenEmpty: false };
+	const valid = {
+		enabled: true,
+		weekday: 1,
+		hour: 8,
+		timezone: 'Europe/Riga',
+		postWhenEmpty: false
+	};
 
 	it('accepts a valid config', () => {
 		expect(saveDigestSchema.parse(valid)).toEqual(valid);
@@ -1308,9 +1412,11 @@ git commit -m "feat(integrations): add digest save + connection-digest form sche
 ## Task 12: Team-page actions + load
 
 **Files:**
+
 - Modify: `src/routes/app/teams/[id]/+page.server.ts`
 
 **Interfaces:**
+
 - Consumes: `saveDigestSchema`, `updateConnectionDigestSchema` (`$lib/schemas/integration`); `getDigestConfig`, `upsertDigestConfig` (`$lib/server/integrations/digest-config`); `upsertDigestSchedule`, `removeDigestSchedule` (`$lib/server/queue/digest-schedule`).
 - Produces: `saveDigest`, `updateConnectionDigest` actions; `integrations.digestForm` (a `SuperValidated<Infer<typeof saveDigestSchema>>` seeded from the saved config or defaults) and per-connection `notifyDigest` in the page data.
 
@@ -1336,44 +1442,44 @@ import { removeDigestSchedule, upsertDigestSchedule } from '$lib/server/queue/di
 - [ ] **Step 2: Extend the `load` integrations block.** In `load`, inside `if (canManage)`, add `notifyDigest` to the connection select and load the digest config. Replace the `Promise.all([...])` that builds `[connections, feedToken, connectionForm]` with:
 
 ```ts
-		const [connections, feedToken, connectionForm, digestConfig] = await Promise.all([
-			db
-				.select({
-					id: integrationConnection.id,
-					provider: integrationConnection.provider,
-					label: integrationConnection.label,
-					notifyOoo: integrationConnection.notifyOoo,
-					notifyDigest: integrationConnection.notifyDigest,
-					consecutiveFailures: integrationConnection.consecutiveFailures,
-					lastFailureAt: integrationConnection.lastFailureAt
-				})
-				.from(integrationConnection)
-				.where(eq(integrationConnection.orgId, params.id))
-				.orderBy(integrationConnection.createdAt),
-			getOrCreateFeedToken({ type: 'org', id: params.id }),
-			superValidate(zod4(addConnectionSchema), { id: 'connection' }),
-			getDigestConfig(params.id)
-		]);
-		const digestForm = await superValidate(
-			digestConfig
-				? {
-						enabled: digestConfig.enabled,
-						weekday: digestConfig.weekday,
-						hour: digestConfig.hour,
-						timezone: digestConfig.timezone,
-						postWhenEmpty: digestConfig.postWhenEmpty
-					}
-				: { enabled: false, weekday: 1, hour: 9, timezone: currentUser.timezone, postWhenEmpty: false },
-			zod4(saveDigestSchema),
-			{ id: 'digest' }
-		);
-		integrations = {
-			connections,
-			feedUrl: feedUrl(feedToken),
-			connectionForm,
-			teamLocale,
-			digestForm
-		};
+const [connections, feedToken, connectionForm, digestConfig] = await Promise.all([
+	db
+		.select({
+			id: integrationConnection.id,
+			provider: integrationConnection.provider,
+			label: integrationConnection.label,
+			notifyOoo: integrationConnection.notifyOoo,
+			notifyDigest: integrationConnection.notifyDigest,
+			consecutiveFailures: integrationConnection.consecutiveFailures,
+			lastFailureAt: integrationConnection.lastFailureAt
+		})
+		.from(integrationConnection)
+		.where(eq(integrationConnection.orgId, params.id))
+		.orderBy(integrationConnection.createdAt),
+	getOrCreateFeedToken({ type: 'org', id: params.id }),
+	superValidate(zod4(addConnectionSchema), { id: 'connection' }),
+	getDigestConfig(params.id)
+]);
+const digestForm = await superValidate(
+	digestConfig
+		? {
+				enabled: digestConfig.enabled,
+				weekday: digestConfig.weekday,
+				hour: digestConfig.hour,
+				timezone: digestConfig.timezone,
+				postWhenEmpty: digestConfig.postWhenEmpty
+			}
+		: { enabled: false, weekday: 1, hour: 9, timezone: currentUser.timezone, postWhenEmpty: false },
+	zod4(saveDigestSchema),
+	{ id: 'digest' }
+);
+integrations = {
+	connections,
+	feedUrl: feedUrl(feedToken),
+	connectionForm,
+	teamLocale,
+	digestForm
+};
 ```
 
 (`getDigestConfig` returns the full row or `null`; the seed reads only the five form fields. When null, `timezone` defaults to the acting user's `timezone`.)
@@ -1436,11 +1542,13 @@ git commit -m "feat(integrations): add saveDigest and updateConnectionDigest act
 ## Task 13: Per-connection settings dialog
 
 **Files:**
+
 - Create: `src/lib/components/integrations/connection-settings-dialog.svelte`
 - Modify: `src/lib/components/integrations/integrations-card.svelte`
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 
 **Interfaces:**
+
 - Consumes: page data connection rows (now including `notifyDigest`).
 - Produces: a dialog component rendering per-connection toggles (`notifyOoo`, `notifyDigest`), the test action, and the remove action. `integrations-card.svelte` renders compact rows that open it.
 
@@ -1564,9 +1672,9 @@ To `messages/fr.json`:
   - Replace the entire `<Item.Actions>…</Item.Actions>` block (the inline notify form, test form, and remove form) with:
 
 ```svelte
-							<Item.Actions>
-								<ConnectionSettingsDialog {row} />
-							</Item.Actions>
+<Item.Actions>
+	<ConnectionSettingsDialog {row} />
+</Item.Actions>
 ```
 
 - [ ] **Step 5: Run the autofixer on the card.** Run `svelte-autofixer` on `integrations-card.svelte` until clean. Remove any now-unused imports it flags (e.g. `Switch`, `Label` if no longer used in the card).
@@ -1590,11 +1698,13 @@ git commit -m "feat(integrations): move per-connection settings into a dialog"
 ## Task 14: Weekly-digest settings subsection
 
 **Files:**
+
 - Create: `src/lib/components/integrations/digest-settings.svelte`
 - Modify: `src/lib/components/integrations/integrations-card.svelte`
 - Modify: `messages/en-GB.json`, `messages/en-US.json`, `messages/pl.json`, `messages/fr.json`
 
 **Interfaces:**
+
 - Consumes: `integrations.digestForm` (`SuperValidated<Infer<typeof saveDigestSchema>>`) from page data.
 - Produces: the digest settings form — a client `superForm` in default form mode with `name`+`bind:checked` Switches and `name`ed Selects, posting to `?/saveDigest` — mirroring the settings notification-preferences form. Rendered inside the integrations card.
 
@@ -1671,7 +1781,9 @@ To `messages/fr.json`:
 	const pad2 = (n: number) => String(n).padStart(2, '0');
 	// 2024-01-01 is a Monday, so Date.UTC(2024, 0, iso) maps ISO 1–7 to Mon–Sun.
 	const weekdayName = (iso: number) =>
-		new Intl.DateTimeFormat(getLocale(), { weekday: 'long' }).format(new Date(Date.UTC(2024, 0, iso)));
+		new Intl.DateTimeFormat(getLocale(), { weekday: 'long' }).format(
+			new Date(Date.UTC(2024, 0, iso))
+		);
 </script>
 
 <form method="POST" action="?/saveDigest" use:enhance class="grid gap-4">
@@ -1694,7 +1806,9 @@ To `messages/fr.json`:
 				value={String($data.weekday)}
 				onValueChange={(value) => value && ($data.weekday = Number(value))}
 			>
-				<Select.Trigger id="digest-weekday" class="w-full">{weekdayName($data.weekday)}</Select.Trigger>
+				<Select.Trigger id="digest-weekday" class="w-full"
+					>{weekdayName($data.weekday)}</Select.Trigger
+				>
 				<Select.Content>
 					{#each weekdays as day (day)}
 						<Select.Item value={String(day)}>{weekdayName(day)}</Select.Item>
@@ -1709,7 +1823,8 @@ To `messages/fr.json`:
 				type="single"
 				name="hour"
 				value={String($data.hour)}
-				onValueChange={(value) => value !== undefined && value !== '' && ($data.hour = Number(value))}
+				onValueChange={(value) =>
+					value !== undefined && value !== '' && ($data.hour = Number(value))}
 			>
 				<Select.Trigger id="digest-hour" class="w-full">{pad2($data.hour)}:00</Select.Trigger>
 				<Select.Content>
@@ -1756,21 +1871,21 @@ To `messages/fr.json`:
   - Add, just above the closing `<FeedUrlField … />`:
 
 ```svelte
-			<DigestSettings form={digestForm} />
+<DigestSettings form={digestForm} />
 ```
 
 - [ ] **Step 5: Pass the new prop from the page.** In `src/routes/app/teams/[id]/+page.svelte`, the `IntegrationsCard` is rendered at ~line 388. Add the `digestForm` prop:
 
 ```svelte
-	{#if data.integrations}
-		<IntegrationsCard
-			connections={data.integrations.connections}
-			feedUrl={data.integrations.feedUrl}
-			form={data.integrations.connectionForm}
-			teamLocale={data.integrations.teamLocale}
-			digestForm={data.integrations.digestForm}
-		/>
-	{/if}
+{#if data.integrations}
+	<IntegrationsCard
+		connections={data.integrations.connections}
+		feedUrl={data.integrations.feedUrl}
+		form={data.integrations.connectionForm}
+		teamLocale={data.integrations.teamLocale}
+		digestForm={data.integrations.digestForm}
+	/>
+{/if}
 ```
 
 - [ ] **Step 6: Typecheck.**
