@@ -39,6 +39,4 @@ You must follow these whenever working on the project and making relevant edits:
 
 ## Database workflow
 
-Apply schema changes with **`pnpm db:generate` → commit the generated migration → `pnpm db:migrate`**.
-
-Do **not** use `drizzle-kit push`. On the pinned drizzle-kit (0.31.x, the latest stable) its live-database introspection does not round-trip `nullsNotDistinct` unique constraints (`calendar_share_unique`, `calendar_feed_token_owner_unique`), so `push` perpetually proposes to recreate them — surfacing a spurious "do you want to truncate?" prompt — even when the schema is unchanged. It also does not record applied migrations in `drizzle.__drizzle_migrations`, which desyncs the migration ledger against `db:migrate`. Known upstream bug (drizzle-orm#4789, fixed only in the drizzle-kit 1.0 line). The `db:push` script has been removed for this reason; `db:generate`/`db:migrate` are unaffected because they replay committed SQL rather than introspecting.
+Apply schema changes only with **`pnpm db:generate` → commit the generated migration → `pnpm db:migrate`**. Do **not** use `drizzle-kit push`.
