@@ -3,6 +3,7 @@ import { buildDigestMessage, digestHeaderText, digestRosterText } from './digest
 
 const events = [
 	{
+		userId: 'u-bob',
 		userName: 'Bob',
 		type: 'sick_leave',
 		title: null,
@@ -11,6 +12,7 @@ const events = [
 		end: new Date('2026-07-10T00:00:00Z')
 	},
 	{
+		userId: 'u-alice',
 		userName: 'Alice',
 		type: 'vacation',
 		title: null,
@@ -43,6 +45,7 @@ describe('buildDigestMessage', () => {
 			'Jul 6 – Jul 12',
 			[
 				{
+					userId: 'u-alice',
 					userName: 'Alice',
 					type: 'business_trip',
 					title: 'Berlin',
@@ -54,6 +57,37 @@ describe('buildDigestMessage', () => {
 			'en-GB'
 		);
 		expect(m.entries[0].items[0].label).toBe('Berlin');
+	});
+
+	it('keeps two members with the same display name as separate entries', () => {
+		const m = buildDigestMessage(
+			'Team A',
+			'Jul 6 – Jul 12',
+			[
+				{
+					userId: 'u1',
+					userName: 'Alex',
+					type: 'vacation',
+					title: null,
+					allDay: true,
+					start: new Date('2026-07-06T00:00:00Z'),
+					end: new Date('2026-07-06T00:00:00Z')
+				},
+				{
+					userId: 'u2',
+					userName: 'Alex',
+					type: 'sick_leave',
+					title: null,
+					allDay: true,
+					start: new Date('2026-07-07T00:00:00Z'),
+					end: new Date('2026-07-07T00:00:00Z')
+				}
+			],
+			'en-GB'
+		);
+		expect(m.entries).toHaveLength(2);
+		expect(m.entries.map((e) => e.actorName)).toEqual(['Alex', 'Alex']);
+		expect(m.entries.every((e) => e.items.length === 1)).toBe(true);
 	});
 });
 

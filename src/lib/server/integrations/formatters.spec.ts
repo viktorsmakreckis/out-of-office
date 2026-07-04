@@ -72,6 +72,7 @@ const digest = buildDigestMessage(
 	'Jul 6 – Jul 12',
 	[
 		{
+			userId: 'u-alice',
 			userName: 'Alice',
 			type: 'vacation',
 			title: null,

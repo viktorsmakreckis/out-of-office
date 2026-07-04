@@ -56,6 +56,7 @@ export async function sendTeamDigest(orgId: string, now: Date = new Date()): Pro
 			? []
 			: await db
 					.select({
+						userId: user.id,
 						userName: user.name,
 						type: calendarEvent.type,
 						title: calendarEvent.title,
